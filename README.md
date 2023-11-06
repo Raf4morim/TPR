@@ -12,3 +12,8 @@ Prevenção e deteção de intrusões na rede.
 	-Deteção de anomalias de comportamento.
 	-Diferenciação de acessos lícitos e ilícitos.
 	-Implantação de contra-medidas.
+
+```bash
+# Para ver os plots
+.\amb_virtual\Scripts\activate
+```

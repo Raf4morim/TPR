@@ -1,40 +1,47 @@
+# objetivo de calcular o tráfego de upload e download entre 
+# uma rede de clientes (client network) 
+# e uma rede de serviço (service network).
+
 import sys
 import argparse
 import datetime
-from netaddr import IPNetwork, IPAddress, IPSet
-import pyshark
+from netaddr import IPNetwork, IPAddress, IPSet # biblioteca que lida com endereços IP e redes IP
+import pyshark                                  # biblioteca para análise de tráfego de rede
 
 def pktHandler(timestamp,srcIP,dstIP,lengthIP,sampDelta,outfile):
     global scnets
     global ssnets
-    global npkts
+    global npkts    # n de pacotes
     global T0
-    global outc
-    global last_ks
+    global outc     # dados de saida
+    global last_ks  # ultimo intervalo de amostragem
     
+    # verificar se o par de endereços IP está contido 
+    # nas redes de clientes (scnets) e de serviço (ssnets).
     if (IPAddress(srcIP) in scnets and IPAddress(dstIP) in ssnets) or (IPAddress(srcIP) in ssnets and IPAddress(dstIP) in scnets):
         if npkts==0:
             T0=float(timestamp)
             last_ks=0
             
+        # calculo do "intervalo de amostragem" (ks) com base no tempo decorrido 
+        # desde o início (T0) e o intervalo de amostragem configurado.
         ks=int((float(timestamp)-T0)/sampDelta)
         
         if ks>last_ks:
-            outfile.write('{} {} {} {}\n'.format(*outc))
+            outfile.write('{} {} {} {}\n'.format(*outc))    # escrevemos se for maior que o anterior
             print('{} {} {} {}'.format(*outc))
-            outc=[0,0,0,0]  
+            outc=[0,0,0,0]                                  # reset
             
         if ks>last_ks+1:
             for j in range(last_ks+1,ks):
                 outfile.write('{} {} {} {}\n'.format(*outc))
                 print('{} {} {} {}'.format(*outc))
                   
-        
-        if IPAddress(srcIP) in scnets: #Upload
+        if IPAddress(srcIP) in scnets: #Upload quando o source está nas redes de clientes
             outc[0]=outc[0]+1
             outc[1]=outc[1]+int(lengthIP)
 
-        if IPAddress(dstIP) in scnets: #Download
+        if IPAddress(dstIP) in scnets: #Download quando o destination está nas redes de clientes
             outc[2]=outc[2]+1
             outc[3]=outc[3]+int(lengthIP)
         
@@ -113,7 +120,7 @@ def main():
             if fileFormat==1 and len(pktData)==9: #script format
                 timestamp,srcIP,dstIP,lengthIP=pktData[0],pktData[4],pktData[6],pktData[8]
                 pktHandler(timestamp,srcIP,dstIP,lengthIP,sampDelta,outfile)
-            elif fileFormat==2 and len(pktData)==4: #tshark format "-T fileds -e frame.time_relative -e ip.src -e ip.dst -e ip.len"
+            elif fileFormat==2 and len(pktData)==4: # tshark format "-T fileds -e frame.time_relative -e ip.src -e ip.dst -e ip.len"
                 timestamp,srcIP,dstIP,lengthIP=pktData[0],pktData[1],pktData[2],pktData[3]
                 pktHandler(timestamp,srcIP,dstIP,lengthIP,sampDelta,outfile)
         infile.close()
