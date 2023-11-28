@@ -1,0 +1,185 @@
+Date: 27/11/2023
+Time: 13:19
+Phone Number: +91**********
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:25
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:27
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:40
+Phone Number: +351914411549
+Message: Hello from Python! This is an instant WhatsApp message.
+--------------------
+Date: 27/11/2023
+Time: 13:42
+Phone Number: +351914411549
+Message: Hello from Python! This is an instant WhatsApp message.
+--------------------
+Date: 27/11/2023
+Time: 13:46
+Phone Number: +351914411549
+Message: Hello from Python! This is an instant WhatsApp message.
+--------------------
+Date: 27/11/2023
+Time: 13:49
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:52
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:56
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:57
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 13:59
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:1
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:3
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:4
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:6
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:9
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:11
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:17
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:19
+Phone Number: +351914411549
+Message: Hello
+--------------------
+Date: 27/11/2023
+Time: 14:28
+Phone Number: +351914411549
+Message: Agora são {horas} horas, {minutos} minutos e {segundos} segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:30
+Phone Number: +351914411549
+Message: Agora são {horas} horas, {minutos} minutos e {segundos} segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:34
+Phone Number: +351914411549
+Message: Agora são 14 horas, 34 minutos e 17 segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:40
+Phone Number: +351914411549
+Message: Agora são 14 horas, 40 minutos e 16 segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:43
+Phone Number: +351914411549
+Message: Agora são 14 horas, 43 minutos e 16 segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:46
+Phone Number: +351914411549
+Message: Agora são 14 horas, 46 minutos e 51 segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:53
+Phone Number: +351914411549
+Message: Agora são 14 horas, 53 minutos e 23 segundos.
+--------------------
+Date: 27/11/2023
+Time: 14:55
+Phone Number: +351914411549
+Message: Agora são 14 horas, 55 minutos e 49 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:0
+Phone Number: +351914411549
+Message: Agora são 15 horas, 0 minutos e 45 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:2
+Phone Number: +351914411549
+Message: Agora são 15 horas, 2 minutos e 15 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:6
+Phone Number: +351914411549
+Message: Agora são 15 horas, 6 minutos e 26 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:8
+Phone Number: +351914411549
+Message: Agora são 15 horas, 8 minutos e 19 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:10
+Phone Number: +351914411549
+Message: Agora são 15 horas, 10 minutos e 37 segundos.
+--------------------
+Date: 27/11/2023
+Time: 15:34
+Phone Number: +351914411549
+Message: How can I help you?
+--------------------
+Date: 27/11/2023
+Time: 15:36
+Phone Number: +351914411549
+Message: What can I do to help you?
+--------------------
+Date: 27/11/2023
+Time: 16:25
+Phone Number: +351914411549
+Message: What do you want to talk about?
+--------------------
+Date: 27/11/2023
+Time: 16:36
+Phone Number: +351914411549
+Message: What can I do?
+--------------------
+Date: 27/11/2023
+Time: 16:38
+Phone Number: +351914411549
+Message: What do you need?
+--------------------
