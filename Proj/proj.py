@@ -7,18 +7,29 @@ import numpy as np
 # up_count      up_payload      down_count      down_payload
 
 sampDelta = 5   # seconds
-widths = 120      # sliding window width
-slide = 12       # sliding window slide
+widths = 2      # sliding window width
+slide = 1       # sliding window slide
+#############################################################
 # file = 'test.pcap'
 # file = 'big.pcap'
-file = 'browsingAmorim.pcap'
 # NETClient = ['172.20.10.0/25']
 # NETClient = ['192.168.24.0/24']
-# NETClient = ['192.168.1.107/32']
-NETClient = ['10.0.2.15']
+#############################################################
+# NETClient = ['192.168.1.107/32'] 
+# file = 'Captures/test2.pcap'
+#############################################################
+NETClient = ['192.168.0.163'] 
+# file = 'Captures/attackSmartWind.pcap'
+# file = 'Captures/attackSeqWind.pcap'
+file = 'Captures/brwsg2Wind.pcap'
+#############################################################
+# file = 'Captures/attackSeqVM.pcap'
+# file = 'Captures/brwsg1VM.pcap'
+# NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
+#############################################################
+# NETServer = ['157.240.212.60']  # Apenas para o do Wpp por agora
 NETServer = ['0.0.0.0/0']
 
-# samplesMatrices = np.array([])
 samplesMatrices = []
 
 
@@ -116,6 +127,10 @@ def dataIntoMatrices(dataFile):
     return matrixDataFileName
 
 
+    ######################################################################################
+    #                                      FEATURES                                      #
+    ######################################################################################
+
 def sumMatrices(matrices):
     sum = np.copy(matrices[0])
     for i in range(1, len(matrices)):
@@ -138,14 +153,16 @@ def trafficMatrices(matrices):
 
 def maxMin(data):
     maxMatrix = np.copy(data[0])
+    # print("\nMIIIIIIIIIIIIIIIIIN------",data[:])
     minMatrix = np.copy(data[0])
-    for matrix in data[1:]:
+    for matrix in data[:]:
         for line in range(0,len(matrix)):
             for column in range(0,len(matrix[0])):
                 if matrix[line][column] > maxMatrix[line][column]:
                     maxMatrix[line][column] = np.copy(matrix[line][column])
                 if matrix[line][column] < minMatrix[line][column]:
                     minMatrix[line][column] = np.copy(matrix[line][column])
+    # print("\nMIIIIIIIIIIIIIIIIIN------",maxMatrix)
     return (maxMatrix, minMatrix)
 
 
@@ -167,6 +184,72 @@ def getPercentages(matrix, sum):
                 pass
     return tmpMatrix
 
+def extractSilenceActivity(data, i, threshold=0):
+    matriz = data
+    # print("i[0] -> ", i[0])
+    # print("i[1] -> ", i[1])
+    # print("len(i[0] -> ", len(i[0]))
+
+    save_silence_npkt_payload_ul_dl = []
+        # up_count      up_payload      down_count      down_payload
+    for j in range(len(i[0])):
+        if(i[0][j]<=threshold):
+            s=[1]
+            a=[]
+        else:
+            s=[]
+            a=[1]
+        # print(f'i[0][{j}] = {i[0][j]}')
+        # print(f'i[1][{j}] = {i[1][j]}')
+        if(i[0][j]>threshold and i[1][j]<=threshold):
+            s.append(1)
+        elif(i[0][j]<=threshold and i[1][j]>threshold):
+            a.append(1)
+        elif (i[0][j]<=threshold and i[1][j]<=threshold):
+            s[-1]+=1
+        else:
+            a[-1]+=1
+        save_silence_npkt_payload_ul_dl.append([s,a])
+        # save_silence_npkt_payload_ul_dl.append(a)
+        # print('ss ', s)        
+        # print('aa ', a)
+    # print('save_silence_npkt_payload_ul_dl -> ', save_silence_npkt_payload_ul_dl)
+    # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
+    return save_silence_npkt_payload_ul_dl
+
+def extractStatsAdv(data, i, threshold=0):
+    nSamp=data.shape
+    M1=np.mean(data,axis=0)
+    Md1=np.median(data,axis=0)
+    Std1=np.std(data,axis=0)
+
+    extractSil = []
+    extractAct = []
+    silence_faux = [] 
+    activity_faux = []
+
+    for coluna in range(len(i[0])):
+        # print("\nUOOOOOOOOOOOOOOOOOOOOOOOOOI -> ",extractSilenceActivity(data, i, threshold)[coluna]) # ---------[0, 2]
+        extractSil,extractAct =extractSilenceActivity(data, i, threshold)[coluna]
+        # print("\n1UOOOOOOOOOOOOOOOOOOOOOOOOOI -> ", extractSil) # -------- 0
+        # print("2UOOOOOOOOOOOOOOOOOOOOOOOOOI -> ",extractAct) # -------- 2
+        if len(extractSil) > 0:
+            silence_faux.append([np.sum(extractSil), np.mean(extractSil), np.std(extractSil), np.median(extractSil), np.max(extractSil), np.min(extractSil)])
+        else:
+            silence_faux.append([0,0,0,0,0,0])
+        if len(extractAct) > 0:
+            activity_faux.append([np.sum(extractAct), np.mean(extractAct), np.std(extractAct), np.median(extractAct), np.max(extractAct), np.min(extractAct)])
+        else:
+            activity_faux.append([0,0,0,0,0,0])
+        
+    # print('silence_faux -> ', silence_faux)
+    # print('activity_faux -> ', activity_faux)
+        # i ->  [[  2 482   0   0] [  1 241   0   0]]
+        # npku(sum-media-desvio-mediana-max-min)    nbytesu(sum-media-desvio-mediana-max-min)  npkd(sum-media-desvio-mediana-max-min)  nbytesd(sum-media-desvio-mediana-max-min) 
+        # silence_faux ->  [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [2, 2.0, 0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2]]
+        # activity_faux ->  [[2, 2.0, 0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+    return [M1, Md1, Std1, silence_faux, activity_faux]
+    
 
 def extractStats(data):
     M1 = np.mean(data, axis=0)
@@ -200,74 +283,119 @@ def extractFeatures(dataFile):
     avgMatrix = np.array([])
     medianMatrix = np.array([])
     stdMatrix = np.array([])
-    # print('================================================================================================== ' + str(len(data[0][0])))
+
+    # print('================================================================== ' + str((data[0][0])))
+    # ================================================================== [  2 482   0   0]
     while iobs*slidingValue <= nSamples-lengthObsWindow:
         currentData = np.copy(data[iobs*slidingValue:iobs*slidingValue+lengthObsWindow])
+        # print('==================================================================\n'+str(currentData))
         sumMatrix = sumMatrices(currentData)
         sumCol = sumColumns(sumMatrix)
         maxMatrix, minMatrix = maxMin(currentData)
         currentFlows = trafficMatrices(currentData)
         percentageMatrix = getPercentages(sumMatrix, sumCol)
+        silSumMatrix = []
+        silAvgMatrix = []
+        silStdMatrix = []
+        silMedMatrix = []
+        silMaxMatrix = []
+        silMinMatrix = []
         n = 0
         for i in currentFlows:
-            stats = extractStats(np.copy(currentData))
+            # print('==================================================================',n) 
+            # print("i -> ", str(i))
+            stats = extractStatsAdv(np.copy(currentData),i)
             avgMatrix = stats[0]
             medianMatrix = stats[1]
             stdMatrix = stats[2]
+
+
+            tempSum = []
+            tempAvg = []
+            tempStd = []
+            tempMed = []
+            tempMax = []
+            tempMin = []
+            
+            for metricas in range(0,4):
+                tempSum.append(stats[3][metricas][0])
+                tempAvg.append(stats[3][metricas][1])
+                tempStd.append(stats[3][metricas][2])
+                tempMed.append(stats[3][metricas][3])
+                tempMax.append(stats[3][metricas][4])
+                tempMin.append(stats[3][metricas][5])
+
+            silSumMatrix.append(tempSum)
+            silAvgMatrix.append(tempAvg)
+            silStdMatrix.append(tempStd)
+            silMedMatrix.append(tempMed)
+            silMaxMatrix.append(tempMax)
+            silMinMatrix.append(tempMin)
+
+            silSumCol = sumColumns(silSumMatrix)
+            silPercentageMatrix = getPercentages(silSumMatrix, silSumCol)
+                    
             n += 1
+        # print("\nSUMMMMMM  ", silSumMatrix)
+        # print("AVGGGGGG  ", silAvgMatrix)
+        # print("STDDDDDD  ", silStdMatrix)
+        # print("MEDIANNN  ", silMedMatrix)
+
+        # for s_metric in range(0, len(silAvgMatrix)):    
+        #     print(float(silAvgMatrix[s_metric]))
 
         print('\n-------------------------')
         print('   ' + str(iobs+1))
         print('--------- Total ---------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(sumMatrix)):
-            print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(sumMatrix[i][0]), int(sumMatrix[i][1]), int(sumMatrix[i][2]), int(sumMatrix[i][3])))
-            sumOutFile.write(str(sumMatrix[i][0]) + ' ' + str(sumMatrix[i][1]) + ' ' + str(sumMatrix[i][2]) + ' ' + str(sumMatrix[i][3]) + '\n')
+            print('{:21s} {:10d} {:10d} {:10d} {:10d}  {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(sumMatrix[i][0]), int(sumMatrix[i][1]), int(sumMatrix[i][2]), int(sumMatrix[i][3]),int(silSumMatrix[i][0]), int(silSumMatrix[i][1]), int(silSumMatrix[i][2]), int(silSumMatrix[i][3])))
+            sumOutFile.write(str(sumMatrix[i][0]) + ' ' + str(sumMatrix[i][1]) + ' ' + str(sumMatrix[i][2]) + ' ' + str(sumMatrix[i][3]) + str(silSumMatrix[i][0]) + ' ' + str(silSumMatrix[i][1]) + ' ' + str(silSumMatrix[i][2]) + ' ' + str(silSumMatrix[i][3]) + '\n')
         sumOutFile.write('\n')
 
-        print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format('TOTAL: ', int(sumCol[0]), int(sumCol[1]), int(sumCol[2]), int(sumCol[3])))
-        totalOutFile.write(str(sumCol[0]) + ' ' + str(sumCol[1]) + ' ' + str(sumCol[2]) + ' ' + str(sumCol[3]) + '\n\n')
+        print('{:21s} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d}'.format('TOTAL: ', int(sumCol[0]), int(sumCol[1]), int(sumCol[2]), int(sumCol[3]), int(silSumCol[0]), int(silSumCol[1]), int(silSumCol[2]), int(silSumCol[3])))
+        totalOutFile.write(str(sumCol[0]) + ' ' + str(sumCol[1]) + ' ' + str(sumCol[2]) + ' ' + str(sumCol[3]) + str(silSumCol[0]) + ' ' + str(silSumCol[1]) + ' ' + str(silSumCol[2]) + ' ' + str(silSumCol[3])  + '\n\n')
 
         print('\n-------- Perc % ---------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(percentageMatrix)):
-            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(percentageMatrix[i][0]), float(percentageMatrix[i][1]), float(percentageMatrix[i][2]), float(percentageMatrix[i][3])))
+            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(percentageMatrix[i][0]), float(percentageMatrix[i][1]), float(percentageMatrix[i][2]), float(percentageMatrix[i][3]), float(silPercentageMatrix[i][0]), float(silPercentageMatrix[i][1]), float(silPercentageMatrix[i][2]), float(silPercentageMatrix[i][3])))
             percOutFile.write(str(percentageMatrix[i][0]) + ' ' + str(percentageMatrix[i][1]) + ' ' + str(percentageMatrix[i][2]) + ' ' + str(percentageMatrix[i][3]) + '\n')
         percOutFile.write('\n')
 
         print('\n---------- Max ----------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(maxMatrix)):
-            print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(maxMatrix[i][0]), int(maxMatrix[i][1]), int(maxMatrix[i][2]), int(maxMatrix[i][3])))
-            maxOutFile.write(str(maxMatrix[i][0]) + ' ' + str(maxMatrix[i][1]) + ' ' + str(maxMatrix[i][2]) + ' ' + str(maxMatrix[i][3]) + '\n')
+            print('{:21s} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(maxMatrix[i][0]), int(maxMatrix[i][1]), int(maxMatrix[i][2]), int(maxMatrix[i][3]), int(silMaxMatrix[i][0]), int(silMaxMatrix[i][1]), int(silMaxMatrix[i][2]), int(silMaxMatrix[i][3])))
+            maxOutFile.write(str(maxMatrix[i][0]) + ' ' + str(maxMatrix[i][1]) + ' ' + str(maxMatrix[i][2]) + ' ' + str(maxMatrix[i][3]) + str(silMaxMatrix[i][0]) + ' ' + str(silMaxMatrix[i][1]) + ' ' + str(silMaxMatrix[i][2]) + ' ' + str(silMaxMatrix[i][3])  + '\n')
         maxOutFile.write('\n')
 
         print('\n---------- Min ----------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(minMatrix)):
-            print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(minMatrix[i][0]), int(minMatrix[i][1]), int(minMatrix[i][2]), int(minMatrix[i][3])))
-            minOutFile.write(str(minMatrix[i][0]) + ' ' + str(minMatrix[i][1]) + ' ' + str(minMatrix[i][2]) + ' ' + str(minMatrix[i][3]) + '\n')
+            print('{:21s} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i]), int(minMatrix[i][0]), int(minMatrix[i][1]), int(minMatrix[i][2]), int(minMatrix[i][3]), int(silMinMatrix[i][0]), int(silMinMatrix[i][1]), int(silMinMatrix[i][2]), int(silMinMatrix[i][3])))
+            minOutFile.write(str(minMatrix[i][0]) + ' ' + str(minMatrix[i][1]) + ' ' + str(minMatrix[i][2]) + ' ' + str(minMatrix[i][3]) + str(silMinMatrix[i][0]) + ' ' + str(silMinMatrix[i][1]) + ' ' + str(silMinMatrix[i][2]) + ' ' + str(silMinMatrix[i][3])  + '\n')
         minOutFile.write('\n')
 
         print('\n---------- Avg ----------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(avgMatrix)):
-            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(avgMatrix[i][0]), float(avgMatrix[i][1]), float(avgMatrix[i][2]), float(avgMatrix[i][3])))
-            avgOutFile.write(str(avgMatrix[i][0]) + ' ' + str(avgMatrix[i][1]) + ' ' + str(avgMatrix[i][2]) + ' ' + str(avgMatrix[i][3]) + '\n')
+            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(avgMatrix[i][0]), float(avgMatrix[i][1]), float(avgMatrix[i][2]), float(avgMatrix[i][3]), float(silAvgMatrix[i][0]), float(silAvgMatrix[i][1]), float(silAvgMatrix[i][2]), float(silAvgMatrix[i][3])))
+            avgOutFile.write(str(avgMatrix[i][0]) + ' ' + str(avgMatrix[i][1]) + ' ' + str(avgMatrix[i][2]) + ' ' + str(avgMatrix[i][3]) + str(silAvgMatrix[i][0]) + ' ' + str(silAvgMatrix[i][1]) + ' ' + str(silAvgMatrix[i][2]) + ' ' + str(silAvgMatrix[i][3]) + '\n')
         avgOutFile.write('\n')
 
         print('\n-------- Median ---------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(medianMatrix)):
-            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(medianMatrix[i][0]), float(medianMatrix[i][1]), float(medianMatrix[i][2]), float(medianMatrix[i][3])))
-            medianOutFile.write(str(medianMatrix[i][0]) + ' ' + str(medianMatrix[i][1]) + ' ' + str(medianMatrix[i][2]) + ' ' + str(medianMatrix[i][3]) + '\n')
+            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(medianMatrix[i][0]), float(medianMatrix[i][1]), float(medianMatrix[i][2]), float(medianMatrix[i][3]), float(silMedMatrix[i][0]), float(silMedMatrix[i][1]), float(silMedMatrix[i][2]), float(silMedMatrix[i][3])))
+            medianOutFile.write(str(medianMatrix[i][0]) + ' ' + str(medianMatrix[i][1]) + ' ' + str(medianMatrix[i][2]) + ' ' + str(medianMatrix[i][3]) + str(silMedMatrix[i][0]) + ' ' + str(silMedMatrix[i][1]) + ' ' + str(silMedMatrix[i][2]) + ' ' + str(silMedMatrix[i][3]) + '\n')
         medianOutFile.write('\n')
 
         print('\n---------- Std ----------')
-        print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
+        print('{:6s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','  payDown', ' s_npktUp',' s_payUp',' s_npktDown',' s_payDown'))
         for i in range(0,len(stdMatrix)):
-            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(stdMatrix[i][0]), float(stdMatrix[i][1]), float(stdMatrix[i][2]), float(stdMatrix[i][3])))
-            stdOutFile.write(str(stdMatrix[i][0]) + ' ' + str(stdMatrix[i][1]) + ' ' + str(stdMatrix[i][2]) + ' ' + str(stdMatrix[i][3]) + '\n')
+            print('{:21s} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f} {:10.2f}'.format(str(ipList[i]), float(stdMatrix[i][0]), float(stdMatrix[i][1]), float(stdMatrix[i][2]), float(stdMatrix[i][3]), float(silStdMatrix[i][0]), float(silStdMatrix[i][1]), float(silStdMatrix[i][2]), float(silStdMatrix[i][3])))
+            stdOutFile.write(str(stdMatrix[i][0]) + ' ' + str(stdMatrix[i][1]) + ' ' + str(stdMatrix[i][2]) + ' ' + str(stdMatrix[i][3]) + str(silStdMatrix[i][0]) + ' ' + str(silStdMatrix[i][1]) + ' ' + str(silStdMatrix[i][2]) + ' ' + str(silStdMatrix[i][3]) + '\n')
         stdOutFile.write('\n')
 
         print('-------------------------\n\n')
@@ -281,8 +409,13 @@ def extractFeatures(dataFile):
     avgOutFile.close()
     medianOutFile.close()
     stdOutFile.close()
+
+    ######################################################################################
+    #                                      PROFILE                                       #
+    ######################################################################################
     
-    
+
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -366,6 +499,9 @@ def main():
     # print(sumMatrices(samplesMatrices))
     
     extractFeatures(matrixSamplesFile)
+
+
+
 
 
 if __name__ == '__main__':

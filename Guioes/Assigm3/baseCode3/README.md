@@ -1,5 +1,5 @@
-pip install scikit-learn
+pip install -r requirements.txt
 
-numpy
-scipy
-matplotlib
+python basePktFeaturesSilenceExt.py -i Browsing.dat -w 2 -s 1
+
+python .\baseProfileClass.py  
