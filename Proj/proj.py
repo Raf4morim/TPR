@@ -4,6 +4,7 @@ from netaddr import IPNetwork, IPAddress, IPSet
 import pyshark
 import numpy as np
 import os
+from os.path import exists
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
@@ -19,13 +20,14 @@ slide = 1       # sliding window slide
 # NETClient = ['172.20.10.0/25']
 # NETClient = ['192.168.24.0/24']
 #############################################################
-NETClient = ['192.168.1.107/32'] 
-file = 'Captures/test2.pcap'
+# NETClient = ['192.168.1.107/32'] 
+# file = 'Captures/test2.pcap'
 #############################################################
-# NETClient = ['192.168.0.163'] 
+NETClient = ['192.168.0.163'] 
 # file = 'Captures/attackSmartWind.pcap'
-# file = 'Captures/attackSeqWind.pcap'
-# file = 'Captures/brwsg2Wind.pcap'
+profileClassFile = "Captures/attackSeqWind.pcap"
+# file = "Captures/attackSeqWind.pcap"
+file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
 # file = 'Captures/brwsg1VM.pcap'
@@ -420,101 +422,118 @@ def extractFeatures(dataFile):
 
     # print("ttttttttttttttttttt -> ",namesOfFeaturesFileBrowsing)
 
-    profileClass(namesOfFeaturesFileBrowsing)
+    return namesOfFeaturesFileBrowsing
 
     ######################################################################################
     #                                      PROFILE                                       #
     ######################################################################################
 
-def profileClass(namesOfFeaturesFileBrowsing):
-    # attackPcapFile = 
+def profileClass(AllFeaturesBrowsing, profileClassFile):
+    profileClassFile = profileClassFile.split('.')[0]
+    directory, filename = os.path.split(profileClassFile)
+    directory = directory.replace('Captures', 'Features')
+    profileClassFile = directory + '/' + filename
+
+    attackFileSum = f'{profileClassFile}_features_w2_s1_sum'
+    attackFileTotal = f'{profileClassFile}_features_w2_s1_total'
+    attackFilePerc = f'{profileClassFile}_features_w2_s1_percentages'
+    attackFileMax = f'{profileClassFile}_features_w2_s1_max'
+    attackFileMin = f'{profileClassFile}_features_w2_s1_min'
+    attackFileAvg = f'{profileClassFile}_features_w2_s1_avg'
+    attackFileMedian = f'{profileClassFile}_features_w2_s1_median'
+    attackFileStd = f'{profileClassFile}_features_w2_s1_std'
+
+    AllFeaturesAttack = [attackFileSum,   attackFileTotal,   attackFilePerc,   attackFileMax,   
+                         attackFileMin,   attackFileAvg,   attackFileMedian,   attackFileStd]
+
+    for fileFeatureAttack in AllFeaturesAttack:
+        if not exists(fileFeatureAttack):  
+            print(f'No file named {fileFeatureAttack} founded.')
+            exit(0)
+            
+    attackSumF   = open(attackFileSum, 'r').read()
+    attackTotalF = open(attackFileTotal, 'r').read()
+    attackPercF  = open(attackFilePerc, 'r').read()
+    attackMaxF   = open(attackFileMax, 'r').read()
+    attackMinF   = open(attackFileMin, 'r').read()
+    attackAvgF   = open(attackFileAvg, 'r').read()
+    attackMedianF= open(attackFileMedian, 'r').read()
+    attackStdF   = open(attackFileStd, 'r').read()
+    # sumBrsgFile, totalBrsgFile, percBrsgFile, maxBrsgFile, minBrsgFile, avgBrsgFile, medianBrsgFile, stdBrsgFile
+    brsgSumF   =  open(AllFeaturesBrowsing[0], 'r').read()
+    brsgTotalF =  open(AllFeaturesBrowsing[1], 'r').read()
+    brsgPercF  =  open(AllFeaturesBrowsing[2], 'r').read()
+    brsgMaxF   =  open(AllFeaturesBrowsing[3], 'r').read()
+    brsgMinF   =  open(AllFeaturesBrowsing[4], 'r').read()
+    brsgAvgF   =  open(AllFeaturesBrowsing[5], 'r').read()
+    brsgMedianF=  open(AllFeaturesBrowsing[6], 'r').read()
+    brsgStdF   =  open(AllFeaturesBrowsing[7], 'r').read()
+
+    print(brsgSumF)
+
     print("Entrou")
 
-def waitforEnter(fstop=False):
-    if fstop:
-        if sys.version_info[0] == 2:
-            raw_input("Press ENTER to continue.")
-        else:
-            input("Press ENTER to continue.")
-            
-## -- 3 -- ##
-def plotFeatures(features,oClass,f1index=0,f2index=1):
-    nObs,nFea=features.shape
-    colors=['b','g','r']
-    for i in range(nObs):
-        plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+# def waitforEnter(fstop=False):
+#     if fstop:
+#         if sys.version_info[0] == 2:
+#             raw_input("Press ENTER to continue.")
+#         else:
+#             input("Press ENTER to continue.")
 
-    plt.show()
-    waitforEnter()
-    
-def logplotFeatures(features,oClass,f1index=0,f2index=1):
-    nObs,nFea=features.shape
-    colors=['b','g','r']
-    for i in range(nObs):
-        plt.loglog(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+# ## -- 3 -- ##
+# def plotFeatures(features,oClass,f1index=0,f2index=1):
+#     nObs,nFea=features.shape
+#     colors=['b','g','r']
+#     for i in range(nObs):
+#         plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
 
-    plt.show()
-    waitforEnter()
+#     plt.show()
+#     waitforEnter()
     
-## -- 11 -- ##
-def distance(c,p):
-    s=0
-    n=0
-    for i in range(len(c)):
-        if c[i]>0:
-            s+=np.square((p[i]-c[i])/c[i])
-            n+=1
+# def logplotFeatures(features,oClass,f1index=0,f2index=1):
+#     nObs,nFea=features.shape
+#     colors=['b','g','r']
+#     for i in range(nObs):
+#         plt.loglog(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+
+#     plt.show()
+#     waitforEnter()
     
-    return(np.sqrt(s/n))
+# ## -- 11 -- ##
+# def distance(c,p):
+#     s=0
+#     n=0
+#     for i in range(len(c)):
+#         if c[i]>0:
+#             s+=np.square((p[i]-c[i])/c[i])
+#             n+=1
+    
+#     return(np.sqrt(s/n))
         
-    #return(np.sqrt(np.sum(np.square((p-c)/c))))
+#     #return(np.sqrt(np.sum(np.square((p-c)/c))))
 
-Classes = {0: 'Browsing', 1: 'YouTube', 2: 'Mining'}
-plt.ion()
-nfig = 1
-
-
-def plotFeatures(features,oClass,f1index=0,f2index=1):
-    nObs,nFea=features.shape
-    colors=['b','g','r']
-    #blue BROWSING
-    #green for YOUTUBE
-    #RED for Mining
-
-    for i in range(nObs):
-        plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
-
-    # Adicionar nomes aos eixos e título
-    plt.xlabel(f'Feature {f1index}')
-    plt.ylabel(f'Feature {f2index}')
-    plt.title(f'Gráfico de Features {f1index} vs {f2index}')
-
-    plt.show()
-    waitforEnter()
+# Classes = {0: 'Browsing', 1: 'YouTube', 2: 'Mining'}
+# plt.ion()
+# nfig = 1
 
 
+# def plotFeatures(features,oClass,f1index=0,f2index=1):
+#     nObs,nFea=features.shape
+#     colors=['b','g','r']
+#     #blue BROWSING
+#     #green for YOUTUBE
+#     #RED for Mining
 
+#     for i in range(nObs):
+#         plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
 
+#     # Adicionar nomes aos eixos e título
+#     plt.xlabel(f'Feature {f1index}')
+#     plt.ylabel(f'Feature {f2index}')
+#     plt.title(f'Gráfico de Features {f1index} vs {f2index}')
 
-    
-
-
-
-
-    # fname = ''.join(_fname.split('_')[0])+"_features_w{}_s{}".format(lengthObsWindow,slidingValue)
-    
-    # directory, filename = os.path.split(fname)
-    # directory = directory.replace('Captures', 'Features')   # Store in Features to use in Profiles
-    # fname = directory + '/' + filename.split('_')[0] + "_features_w{}_s{}".format(lengthObsWindow,slidingValue)
-    
-    # sumOutFile = open(fname+'_sum', 'r')
-    # totalOutFile = open(fname+'_total', 'w')
-    # percOutFile = open(fname+'_percentages', 'w')
-    # maxOutFile = open(fname+'_max', 'w')
-    # minOutFile = open(fname+'_min', 'w')
-    # avgOutFile = open(fname+'_avg', 'w')
-    # medianOutFile = open(fname+'_median', 'w')
-    # stdOutFile = open(fname+'_std', 'w')
+#     plt.show()
+#     waitforEnter()
 
 
 def main():
@@ -605,12 +624,15 @@ def main():
 
     # print(sumMatrices(samplesMatrices))
     
-    extractFeatures(matrixSamplesFile)
+    namesOfFeaturesFileBrowsing = extractFeatures(matrixSamplesFile)
 
-
-    browsingFeaturesFiles = []
-    miningFeaturesFiles = []
-
+    ans=input('Check if the features to both files are created!\nYou want to stop here?\n> ')
+     
+    if  ans.lower() in ['yes', 'y']:
+        print('Ok, bye!')
+        sys.exit()
+    else:   
+        profileClass(namesOfFeaturesFileBrowsing, profileClassFile)
 
 
 if __name__ == '__main__':
