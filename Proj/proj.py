@@ -20,14 +20,14 @@ slide = 1       # sliding window slide
 # NETClient = ['172.20.10.0/25']
 # NETClient = ['192.168.24.0/24']
 #############################################################
-# NETClient = ['192.168.1.107/32'] 
-# file = 'Captures/test2.pcap'
+NETClient = ['192.168.1.107/32'] 
+file = 'Captures/test2.pcap'
 #############################################################
-NETClient = ['192.168.0.163'] 
+# NETClient = ['192.168.0.163'] 
 # file = 'Captures/attackSmartWind.pcap'
 profileClassFile = "Captures/attackSeqWind.pcap"
 # file = "Captures/attackSeqWind.pcap"
-file = 'Captures/brwsg2Wind.pcap'
+# file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
 # file = 'Captures/brwsg1VM.pcap'
@@ -116,7 +116,7 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
 def dataIntoMatrices(dataFile):
     global ipList, samplesMatrices
     matrixDataFileName = dataFile + '_matrix'
-    # matrixDataFile = open(matrixDataFileName, 'w')
+    matrixDataFile = open(matrixDataFileName, 'w')
     with open(dataFile, 'r') as file:
         tmpMatrix = np.zeros((len(ipList), 4), dtype=int)
         for line in file:
@@ -124,10 +124,9 @@ def dataIntoMatrices(dataFile):
                 lineArray = line.split(' ')
                 tmpMatrix[int(lineArray[0])] = [int(lineArray[1]), int(lineArray[2]), int(lineArray[3]), int(lineArray[4])]
             else:
-                # for tmpIter in tmpMatrix:
-                    # matrixDataFile.write(str(tmpIter[0]) + ' ' + str(tmpIter[1]) + ' ' + str(tmpIter[2]) + ' ' + str(tmpIter[3]) + '\n')
-                # matrixDataFile.write('\n')
-                # samplesMatrices = np.append(samplesMatrices, tmpMatrix)
+                for tmpIter in tmpMatrix:
+                    matrixDataFile.write(str(tmpIter[0]) + ' ' + str(tmpIter[1]) + ' ' + str(tmpIter[2]) + ' ' + str(tmpIter[3]) + '\n')
+                matrixDataFile.write('\n')
                 samplesMatrices.append(tmpMatrix)
                 tmpMatrix = np.zeros((len(ipList), 4), dtype=int)
     return matrixDataFileName
@@ -427,8 +426,102 @@ def extractFeatures(dataFile):
     ######################################################################################
     #                                      PROFILE                                       #
     ######################################################################################
+def waitforEnter(fstop=False):
+    if fstop:
+        if sys.version_info[0] == 2:
+            raw_input("Press ENTER to continue.")
+        else:
+            input("Press ENTER to continue.")
+
+## -- 3 -- ##
+def plotFeatures(features,oClass,f1index=0,f2index=1):
+    nObs,nFea=features.shape
+    colors=['b','g','r']
+    for i in range(nObs):
+        plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+
+    plt.show()
+    waitforEnter()
+    
+def logplotFeatures(features,oClass,f1index=0,f2index=1):
+    nObs,nFea=features.shape
+    colors=['b','g','r']
+    for i in range(nObs):
+        plt.loglog(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+
+    plt.show()
+    waitforEnter()
+    
+## -- 11 -- ##
+def distance(c,p):
+    s=0
+    n=0
+    for i in range(len(c)):
+        if c[i]>0:
+            s+=np.square((p[i]-c[i])/c[i])
+            n+=1
+    
+    return(np.sqrt(s/n))
+        
+    #return(np.sqrt(np.sum(np.square((p-c)/c))))
+
+Classes = {0: 'Browsing', 1: 'Attack'}
+plt.ion()
+nfig = 1
+
+
+def plotFeatures(features,oClass,f1index=0,f2index=1):
+    nObs,nFea=features.shape
+    colors=['b','r']
+    #blue BROWSING
+    #RED for Mining
+
+    for i in range(nObs):
+        plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
+
+    # Adicionar nomes aos eixos e título
+    plt.xlabel(f'Feature {f1index}')
+    plt.ylabel(f'Feature {f2index}')
+    plt.title(f'Gráfico de Features {f1index} vs {f2index}')
+
+    plt.show()
+    waitforEnter()
+
+def read_file(file_path):
+    with open(file_path, 'r') as file:
+        return file.readlines()
+    
+def convert_to_array(combined_content_str):
+    lines = combined_content_str.split('\n')
+    return np.array([line.split() for line in lines if line.strip()], dtype=float)
+
 
 def profileClass(AllFeaturesBrowsing, profileClassFile):
+    ############################## LOAD FILE BROWSING##############################
+    #############################################################################
+
+    file_paths_Brsg = [AllFeaturesBrowsing[0], AllFeaturesBrowsing[2], AllFeaturesBrowsing[3], AllFeaturesBrowsing[4], AllFeaturesBrowsing[5], AllFeaturesBrowsing[6], AllFeaturesBrowsing[7]] 
+    #, AllFeaturesBrowsing[1] não entra pq total n tem numero suficiente de linhas
+    all_features_Brsg = [read_file(path) for path in file_paths_Brsg]
+    num_lines_brsg = len(all_features_Brsg[0])
+    assert all(len(feature_brsg) == num_lines_brsg for feature_brsg in all_features_Brsg), "Files don't have the same number of lines"
+
+    combined_content_brsg = []
+    for i in range(num_lines_brsg):
+        combined_line = " ".join(feature[i].strip() for feature in all_features_Brsg)
+        combined_content_brsg.append(combined_line)
+    combined_content_str_brsg = "\n".join(combined_content_brsg)
+
+    # print("Combined Content brsg:\n", combined_content_str_brsg)
+    
+
+    non_empty_lines_brsg = [line for line in combined_content_str_brsg.splitlines() if line.strip()]
+    # print("non_empty_lines_brsg:\n", len(non_empty_lines_brsg))
+    oClass_brsg= np.ones((len(non_empty_lines_brsg),1))*0
+    # print("oClass_brsg_sum---------->\n",oClass_brsg)
+
+    ############################## LOAD FILE ATTACK##############################
+    #############################################################################
     profileClassFile = profileClassFile.split('.')[0]
     directory, filename = os.path.split(profileClassFile)
     directory = directory.replace('Captures', 'Features')
@@ -450,90 +543,43 @@ def profileClass(AllFeaturesBrowsing, profileClassFile):
         if not exists(fileFeatureAttack):  
             print(f'No file named {fileFeatureAttack} founded.')
             exit(0)
-            
-    attackSumF   = open(attackFileSum, 'r').read()
-    attackTotalF = open(attackFileTotal, 'r').read()
-    attackPercF  = open(attackFilePerc, 'r').read()
-    attackMaxF   = open(attackFileMax, 'r').read()
-    attackMinF   = open(attackFileMin, 'r').read()
-    attackAvgF   = open(attackFileAvg, 'r').read()
-    attackMedianF= open(attackFileMedian, 'r').read()
-    attackStdF   = open(attackFileStd, 'r').read()
-    # sumBrsgFile, totalBrsgFile, percBrsgFile, maxBrsgFile, minBrsgFile, avgBrsgFile, medianBrsgFile, stdBrsgFile
-    brsgSumF   =  open(AllFeaturesBrowsing[0], 'r').read()
-    brsgTotalF =  open(AllFeaturesBrowsing[1], 'r').read()
-    brsgPercF  =  open(AllFeaturesBrowsing[2], 'r').read()
-    brsgMaxF   =  open(AllFeaturesBrowsing[3], 'r').read()
-    brsgMinF   =  open(AllFeaturesBrowsing[4], 'r').read()
-    brsgAvgF   =  open(AllFeaturesBrowsing[5], 'r').read()
-    brsgMedianF=  open(AllFeaturesBrowsing[6], 'r').read()
-    brsgStdF   =  open(AllFeaturesBrowsing[7], 'r').read()
 
-    print(brsgSumF)
+    file_paths_atck = [attackFileSum, attackFilePerc, attackFileMax, attackFileMin, attackFileAvg, attackFileMedian, attackFileStd] #, attackFileTotal não entra pq total n tem numero suficiente de linhas 
+    all_features_atck = [read_file(path) for path in file_paths_atck]
+    num_lines_atck = len(all_features_atck[0])
+    assert all(len(feature_atck) == num_lines_atck for feature_atck in all_features_atck), "Files don't have the same number of lines"
+
+    combined_content_atck = []
+    for i in range(num_lines_atck):
+        combined_line = " ".join(feature[i].strip() for feature in all_features_atck)
+        combined_content_atck.append(combined_line)
+    combined_content_str_atck = "\n".join(combined_content_atck)
+    # print("####################################################################v v v v atck\n")
+    # print("Combined Content atck:\n", combined_content_str_atck)
+
+    non_empty_lines_atck = [line for line in combined_content_str_atck.splitlines() if line.strip()]
+    # print("non_empty_lines_atck:\n", len(non_empty_lines_atck))
+    oClass_atck= np.ones((len(non_empty_lines_atck),1))*1
+    # print("oClass_brsg_sum---------->\n",oClass_atck)
+    
+
+
+    ##########################JOIN FEATURES ATCK& BRSG###########################
+    #############################################################################
+    combined_content_arr_brsg = convert_to_array(combined_content_str_brsg)
+    combined_content_arr_atck = convert_to_array(combined_content_str_atck)
+
+    
+    features = np.vstack((combined_content_arr_brsg, combined_content_arr_atck))
+    oClass = np.vstack(( oClass_brsg, oClass_atck))
+
+
+    print("combined_content_arr_brsg\n", features)
+    print("oclaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaass", oClass)
 
     print("Entrou")
 
-# def waitforEnter(fstop=False):
-#     if fstop:
-#         if sys.version_info[0] == 2:
-#             raw_input("Press ENTER to continue.")
-#         else:
-#             input("Press ENTER to continue.")
 
-# ## -- 3 -- ##
-# def plotFeatures(features,oClass,f1index=0,f2index=1):
-#     nObs,nFea=features.shape
-#     colors=['b','g','r']
-#     for i in range(nObs):
-#         plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
-
-#     plt.show()
-#     waitforEnter()
-    
-# def logplotFeatures(features,oClass,f1index=0,f2index=1):
-#     nObs,nFea=features.shape
-#     colors=['b','g','r']
-#     for i in range(nObs):
-#         plt.loglog(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
-
-#     plt.show()
-#     waitforEnter()
-    
-# ## -- 11 -- ##
-# def distance(c,p):
-#     s=0
-#     n=0
-#     for i in range(len(c)):
-#         if c[i]>0:
-#             s+=np.square((p[i]-c[i])/c[i])
-#             n+=1
-    
-#     return(np.sqrt(s/n))
-        
-#     #return(np.sqrt(np.sum(np.square((p-c)/c))))
-
-# Classes = {0: 'Browsing', 1: 'YouTube', 2: 'Mining'}
-# plt.ion()
-# nfig = 1
-
-
-# def plotFeatures(features,oClass,f1index=0,f2index=1):
-#     nObs,nFea=features.shape
-#     colors=['b','g','r']
-#     #blue BROWSING
-#     #green for YOUTUBE
-#     #RED for Mining
-
-#     for i in range(nObs):
-#         plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
-
-#     # Adicionar nomes aos eixos e título
-#     plt.xlabel(f'Feature {f1index}')
-#     plt.ylabel(f'Feature {f2index}')
-#     plt.title(f'Gráfico de Features {f1index} vs {f2index}')
-
-#     plt.show()
-#     waitforEnter()
 
 
 def main():

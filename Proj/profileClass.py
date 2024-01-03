@@ -187,11 +187,25 @@ features_browsing = np.loadtxt("BrowsingAllF.dat")
 features_yt = np.loadtxt("YouTubeAllF.dat")
 features_mining = np.loadtxt("MiningAllF.dat")
 
-oClass_browsing = np.ones((len(features_browsing), 1)) * 0
+oClass_browsing = np.ones((len(features_browsing), 1)) * 0 # 185 linhas de 0's
 oClass_yt = np.ones((len(features_yt), 1)) * 1
 oClass_mining = np.ones((len(features_mining), 1)) * 2
 
 features = np.vstack((features_yt, features_browsing, features_mining))
+# print(features)
+# [[1.69263e+05 0.00000e+00 4.88981e+05 ... 6.20000e+01 2.00000e+00
+#   1.00000e+00]
+#  [1.67420e+05 0.00000e+00 4.84743e+05 ... 5.90000e+01 3.00000e+00
+#   1.00000e+00]
+#  [1.55259e+05 0.00000e+00 4.63472e+05 ... 5.80000e+01 3.00000e+00
+#   1.00000e+00]
+#  ... JUNTA NA VERTICAL AS FEATURES TDS 
+#  [9.60000e+01 0.00000e+00 3.93000e+02 ... 4.50000e+01 5.00000e+00
+#   2.00000e+00]
+#  [9.60000e+01 0.00000e+00 3.93000e+02 ... 4.60000e+01 5.00000e+00
+#   2.00000e+00]
+#  [9.30000e+01 0.00000e+00 3.90000e+02 ... 4.60000e+01 5.00000e+00
+#   2.00000e+00]]
 oClass = np.vstack((oClass_yt, oClass_browsing, oClass_mining))
 
 print('Train Silence Features Size:',features.shape)
@@ -201,7 +215,7 @@ plt.figure(4)
 plotFeatures(features,oClass,2,8)
 
 percentage = 0.5
-pB = int(len(features_browsing) * percentage)
+pB = int(len(features_browsing) * percentage) # pB = 142 = 185/2 -> 185=linhas file
 trainFeatures_browsing = features_browsing[:pB, :]
 pYT = int(len(features_yt) * percentage)
 trainFeatures_yt = features_yt[:pYT, :]
@@ -220,6 +234,33 @@ testFeatures_mining = features_mining[pM:, :]
 
 i3Atest = np.vstack((testFeatures_browsing, testFeatures_yt, testFeatures_mining))
 o3testClass = np.vstack((oClass_browsing[pB:], oClass_yt[pYT:], oClass_mining[pM:]))
+
+
+# print("------------>>",trainFeatures_browsing)
+# ------------>> [[2.22300e+03 0.00000e+00 1.16890e+04 ... 5.30000e+01 3.00000e+00
+#   3.00000e+00]
+#  [2.21900e+03 0.00000e+00 1.16900e+04 ... 5.20000e+01 3.00000e+00
+#   3.00000e+00]
+#  [1.80800e+03 0.00000e+00 9.97100e+03 ... 5.10000e+01 3.00000e+00
+#   3.00000e+00]
+#  ...
+#  [2.77560e+04 0.00000e+00 1.05192e+05 ... 4.40000e+01 3.00000e+00
+#   5.00000e+00]
+#  [1.12400e+04 0.00000e+00 5.29640e+04 ... 4.70000e+01 3.00000e+00
+#   4.00000e+00]
+#  [1.17900e+04 0.00000e+00 5.31730e+04 ... 4.80000e+01 3.00000e+00
+#   4.00000e+00]]
+
+
+# print("testFeatures_mining------------>>",testFeatures_mining)
+
+# testFeatures_mining------------>> [[ 73.   0. 185. ...  41.   5.   2.]
+#  [ 69.   0. 179. ...  41.   6.   2.]
+#  [ 76.   0. 189. ...  44.   5.   2.]
+#  ...
+#  [ 96.   0. 393. ...  45.   5.   2.]
+#  [ 96.   0. 393. ...  46.   5.   2.]
+#  [ 93.   0. 390. ...  46.   5.   2.]]
 
 i3train=np.vstack((trainFeatures_browsing,trainFeatures_yt,trainFeatures_mining))
 i3Ctest=np.vstack((testFeatures_browsing,testFeatures_yt,testFeatures_mining))
