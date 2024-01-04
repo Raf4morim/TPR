@@ -208,24 +208,29 @@ features = np.vstack((features_yt, features_browsing, features_mining))
 #   2.00000e+00]]
 oClass = np.vstack((oClass_yt, oClass_browsing, oClass_mining))
 
-print('Train Silence Features Size:',features.shape)
-plt.figure(2)
-plotFeatures(features,oClass,4,10)
-plt.figure(4)
-plotFeatures(features,oClass,2,8)
+# print('Train Silence Features Size:',features.shape)
+# plt.figure(2)
+# plotFeatures(features,oClass,4,10)
+# plt.figure(4)
+# plotFeatures(features,oClass,2,8)
 
 percentage = 0.5
 pB = int(len(features_browsing) * percentage) # pB = 142 = 185/2 -> 185=linhas file
+print("PBbbbb",pB) 
 trainFeatures_browsing = features_browsing[:pB, :]
 pYT = int(len(features_yt) * percentage)
 trainFeatures_yt = features_yt[:pYT, :]
 pM = int(len(features_mining) * percentage)
 trainFeatures_mining = features_mining[:pYT, :]
 
+
+
+
 i2train = np.vstack((trainFeatures_browsing, trainFeatures_yt))
 o2trainClass = np.vstack((oClass_browsing[:pB], oClass_yt[:pYT]))
 
 i3Ctrain = np.vstack((trainFeatures_browsing, trainFeatures_yt, trainFeatures_mining))
+i3train=np.vstack((trainFeatures_browsing,trainFeatures_yt,trainFeatures_mining))
 o3trainClass = np.vstack((oClass_browsing[:pB], oClass_yt[:pYT], oClass_mining[:pM]))
 
 testFeatures_browsing = features_browsing[pB:, :]
@@ -233,8 +238,15 @@ testFeatures_yt = features_yt[pYT:, :]
 testFeatures_mining = features_mining[pM:, :]
 
 i3Atest = np.vstack((testFeatures_browsing, testFeatures_yt, testFeatures_mining))
+i3Ctest=np.vstack((testFeatures_browsing,testFeatures_yt,testFeatures_mining))
 o3testClass = np.vstack((oClass_browsing[pB:], oClass_yt[pYT:], oClass_mining[pM:]))
 
+clustering_with_kmeans(i3Ctrain, o3trainClass)
+clustering_with_dbscan(i3Ctrain, o3trainClass)
+anomaly_detection_with_centroids(i2train, i3Atest, o3testClass)
+anomaly_detection_with_ocsvm(i2train, i3Atest, o3testClass)
+classification_with_svm(i3train, i3Ctest, o3trainClass, o3testClass)
+classification_with_neural_networks(i3train, i3Ctest, o3trainClass, o3testClass)
 
 # print("------------>>",trainFeatures_browsing)
 # ------------>> [[2.22300e+03 0.00000e+00 1.16890e+04 ... 5.30000e+01 3.00000e+00
@@ -262,14 +274,7 @@ o3testClass = np.vstack((oClass_browsing[pB:], oClass_yt[pYT:], oClass_mining[pM
 #  [ 96.   0. 393. ...  46.   5.   2.]
 #  [ 93.   0. 390. ...  46.   5.   2.]]
 
-i3train=np.vstack((trainFeatures_browsing,trainFeatures_yt,trainFeatures_mining))
-i3Ctest=np.vstack((testFeatures_browsing,testFeatures_yt,testFeatures_mining))
 
-clustering_with_kmeans(i3Ctrain, o3trainClass)
-clustering_with_dbscan(i3Ctrain, o3trainClass)
-anomaly_detection_with_centroids(i2train, i3Atest, o3testClass)
-anomaly_detection_with_ocsvm(i2train, i3Atest, o3testClass)
-classification_with_svm(i3train, i3Ctest, o3trainClass, o3testClass)
-classification_with_neural_networks(i3train, i3Ctest, o3trainClass, o3testClass)
+
 
 waitforEnter(fstop=True)
