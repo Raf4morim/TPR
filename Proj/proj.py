@@ -5,8 +5,33 @@ import pyshark
 import numpy as np
 import os
 from os.path import exists
+from pyclbr import Class
+import numpy as np
+import scipy.stats as stats
+import scipy.signal as signal
+import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
+from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn.svm import OneClassSVM
+from scipy.stats import multivariate_normal
+from sklearn.metrics import accuracy_score, precision_score, confusion_matrix
+from sklearn.neural_network import MLPClassifier
+from sklearn import svm
+import seaborn as sns
+import time
+import sys
 import warnings
+import pandas as pd
+from algoritmos import *
 warnings.filterwarnings('ignore')
 
 # up_count      up_payload      down_count      down_payload
@@ -20,14 +45,15 @@ slide = 1       # sliding window slide
 # NETClient = ['172.20.10.0/25']
 # NETClient = ['192.168.24.0/24']
 #############################################################
-NETClient = ['192.168.1.107/32'] 
-file = 'Captures/test2.pcap'
+# NETClient = ['192.168.1.107/32']
+# file = 'Captures/test2.pcap'
 #############################################################
-# NETClient = ['192.168.0.163'] 
+NETClient = ['192.168.0.163']
 # file = 'Captures/attackSmartWind.pcap'
-profileClassFile = "Captures/attackSeqWind.pcap"
+profileClassFile = 'Captures/attackSmartWind.pcap'
+# profileClassFile = "Captures/attackSeqWind.pcap"
 # file = "Captures/attackSeqWind.pcap"
-# file = 'Captures/brwsg2Wind.pcap'
+file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
 # file = 'Captures/brwsg1VM.pcap'
@@ -53,12 +79,12 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
         if npkts == 0:
             T0 = float(timestamp)
             last_ks = 0
-            
+
         ks = int((float(timestamp)-T0) / sampDelta)
-        
+
         if ks > last_ks:
             print()
-            for i in outc: 
+            for i in outc:
                 outfile.write(str(i[0]) + ' ' + str(i[1]) + ' ' + str(i[2]) + ' ' + str(i[3]) + ' ' + str(i[4]) + '\n')
                 print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i[0]]), int(i[1]), int(i[2]), int(i[3]), int(i[4])))
             outfile.write('\n')
@@ -74,12 +100,12 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
             inOutc = False
             outCount = 0
             for iterOutc in outc:
-                if iterOutc[0] == ipIndex: 
+                if iterOutc[0] == ipIndex:
                     inOutc = True
                     outIdx = outCount
                 else:
                     outCount += 1
-            if not inOutc: 
+            if not inOutc:
                 outc.append([ipIndex,0,0,0,0])
                 outIdx = len(outc)-1
             outc[outIdx][1] = outc[outIdx][1] + 1
@@ -94,17 +120,17 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
             inOutc = False
             outCount = 0
             for iterOutc in outc:
-                if iterOutc[0] == ipIndex: 
+                if iterOutc[0] == ipIndex:
                     inOutc = True
                     outIdx = outCount
                 else:
                     outCount += 1
-            if not inOutc: 
+            if not inOutc:
                 outc.append([ipIndex,0,0,0,0])
                 outIdx = len(outc)-1
             outc[outIdx][3] = outc[outIdx][3] + 1
             outc[outIdx][4] = outc[outIdx][4] + int(lengthIP)
-            
+
         # print('= ' + str(srcIP) + ' / ' + str(dstIP) + ' / ' + str(lengthIP))
         # print(outc)
         # print(ipList)
@@ -216,7 +242,7 @@ def extractSilenceActivity(data, i, threshold=0):
             a[-1]+=1
         save_silence_npkt_payload_ul_dl.append([s,a])
         # save_silence_npkt_payload_ul_dl.append(a)
-        # print('ss ', s)        
+        # print('ss ', s)
         # print('aa ', a)
     # print('save_silence_npkt_payload_ul_dl -> ', save_silence_npkt_payload_ul_dl)
     # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
@@ -230,7 +256,7 @@ def extractStatsAdv(data, i, threshold=0):
 
     extractSil = []
     extractAct = []
-    silence_faux = [] 
+    silence_faux = []
     activity_faux = []
 
     for coluna in range(len(i[0])):
@@ -246,15 +272,15 @@ def extractStatsAdv(data, i, threshold=0):
             activity_faux.append([np.sum(extractAct), np.mean(extractAct), np.std(extractAct), np.median(extractAct), np.max(extractAct), np.min(extractAct)])
         else:
             activity_faux.append([0,0,0,0,0,0])
-        
+
     # print('silence_faux -> ', silence_faux)
     # print('activity_faux -> ', activity_faux)
         # i ->  [[  2 482   0   0] [  1 241   0   0]]
-        # npku(sum-media-desvio-mediana-max-min)    nbytesu(sum-media-desvio-mediana-max-min)  npkd(sum-media-desvio-mediana-max-min)  nbytesd(sum-media-desvio-mediana-max-min) 
+        # npku(sum-media-desvio-mediana-max-min)    nbytesu(sum-media-desvio-mediana-max-min)  npkd(sum-media-desvio-mediana-max-min)  nbytesd(sum-media-desvio-mediana-max-min)
         # silence_faux ->  [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [2, 2.0, 0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2]]
         # activity_faux ->  [[2, 2.0, 0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
     return [M1, Md1, Std1, silence_faux, activity_faux]
-    
+
 
 def extractStats(data):
     M1 = np.mean(data, axis=0)
@@ -273,11 +299,11 @@ def extractFeatures(dataFile):
     _fname = str(dataFile.split('.')[0])
 
     fname = ''.join(_fname.split('_')[0])+"_features_w{}_s{}".format(lengthObsWindow,slidingValue)
-    
+
     directory, filename = os.path.split(fname)
     directory = directory.replace('Captures', 'Features')   # Store in Features to use in Profiles
     fname = directory + '/' + filename.split('_')[0] + "_features_w{}_s{}".format(lengthObsWindow,slidingValue)
-    
+
     sumOutFile = open(fname+'_sum', 'w')
     totalOutFile = open(fname+'_total', 'w')
     percOutFile = open(fname+'_percentages', 'w')
@@ -313,7 +339,7 @@ def extractFeatures(dataFile):
         silMinMatrix = []
         n = 0
         for i in currentFlows:
-            # print('==================================================================',n) 
+            # print('==================================================================',n)
             # print("i -> ", str(i))
             stats = extractStatsAdv(np.copy(currentData),i)
             avgMatrix = stats[0]
@@ -327,7 +353,7 @@ def extractFeatures(dataFile):
             tempMed = []
             tempMax = []
             tempMin = []
-            
+
             for metricas in range(0,4):
                 tempSum.append(stats[3][metricas][0])
                 tempAvg.append(stats[3][metricas][1])
@@ -345,14 +371,14 @@ def extractFeatures(dataFile):
 
             silSumCol = sumColumns(silSumMatrix)
             silPercentageMatrix = getPercentages(silSumMatrix, silSumCol)
-                    
+
             n += 1
         # print("\nSUMMMMMM  ", silSumMatrix)
         # print("AVGGGGGG  ", silAvgMatrix)
         # print("STDDDDDD  ", silStdMatrix)
         # print("MEDIANNN  ", silMedMatrix)
 
-        # for s_metric in range(0, len(silAvgMatrix)):    
+        # for s_metric in range(0, len(silAvgMatrix)):
         #     print(float(silAvgMatrix[s_metric]))
 
         print('\n-------------------------')
@@ -412,16 +438,15 @@ def extractFeatures(dataFile):
         print('-------------------------\n\n')
         iobs += 1
 
+        file_vars = [sumOutFile, totalOutFile, percOutFile, maxOutFile, minOutFile, avgOutFile, medianOutFile, stdOutFile]
+        namesOfFeaturesFileBrowsing = []
+        for file_var in file_vars:
+            file_var.close()
+            namesOfFeaturesFileBrowsing.append(file_var.name)
 
-    file_vars = [sumOutFile, totalOutFile, percOutFile, maxOutFile, minOutFile, avgOutFile, medianOutFile, stdOutFile]
-    namesOfFeaturesFileBrowsing = []
-    for file_var in file_vars:
-        file_var.close()
-        namesOfFeaturesFileBrowsing.append(file_var.name)
+        # print("ttttttttttttttttttt -> ",namesOfFeaturesFileBrowsing)
 
-    # print("ttttttttttttttttttt -> ",namesOfFeaturesFileBrowsing)
-
-    return namesOfFeaturesFileBrowsing
+        return namesOfFeaturesFileBrowsing
 
     ######################################################################################
     #                                      PROFILE                                       #
@@ -442,7 +467,7 @@ def plotFeatures(features,oClass,f1index=0,f2index=1):
 
     plt.show()
     waitforEnter()
-    
+
 def logplotFeatures(features,oClass,f1index=0,f2index=1):
     nObs,nFea=features.shape
     colors=['b','g','r']
@@ -451,7 +476,7 @@ def logplotFeatures(features,oClass,f1index=0,f2index=1):
 
     plt.show()
     waitforEnter()
-    
+
 ## -- 11 -- ##
 def distance(c,p):
     s=0
@@ -460,9 +485,9 @@ def distance(c,p):
         if c[i]>0:
             s+=np.square((p[i]-c[i])/c[i])
             n+=1
-    
+
     return(np.sqrt(s/n))
-        
+
     #return(np.sqrt(np.sum(np.square((p-c)/c))))
 
 Classes = {0: 'Browsing', 1: 'Attack'}
@@ -490,17 +515,34 @@ def plotFeatures(features,oClass,f1index=0,f2index=1):
 def read_file(file_path):
     with open(file_path, 'r') as file:
         return file.readlines()
-    
+
 def convert_to_array(combined_content_str):
     lines = combined_content_str.split('\n')
     return np.array([line.split() for line in lines if line.strip()], dtype=float)
 
+def clustering_with_kmeans(features, oClass):
+    print('\n-- Clustering with K-Means --')
+    kmeans = KMeans(n_clusters=3, random_state=0, n_init="auto")
+    labels = kmeans.fit_predict(features)
+
+    for i in range(len(labels)):
+        print('Obs: {:2} ({}): K-Means Cluster Label: -> {}'.format(i, Classes[oClass[i][0]], labels[i]))
+
+
+def clustering_with_dbscan(features, oClass):
+    print('\n-- Clustering with DBSCAN --')
+    features = StandardScaler().fit_transform(features)
+    db = DBSCAN(eps=0.5, min_samples=10).fit(features)
+    labels = db.labels_
+
+    for i in range(len(labels)):
+        print('Obs: {:2} ({}): DBSCAN Cluster Label: -> {}'.format(i, Classes[oClass[i][0]], labels[i]))
 
 def profileClass(AllFeaturesBrowsing, profileClassFile):
     ############################## LOAD FILE BROWSING##############################
     #############################################################################
 
-    file_paths_Brsg = [AllFeaturesBrowsing[0], AllFeaturesBrowsing[2], AllFeaturesBrowsing[3], AllFeaturesBrowsing[4], AllFeaturesBrowsing[5], AllFeaturesBrowsing[6], AllFeaturesBrowsing[7]] 
+    file_paths_Brsg = [AllFeaturesBrowsing[0], AllFeaturesBrowsing[2], AllFeaturesBrowsing[3], AllFeaturesBrowsing[4], AllFeaturesBrowsing[5], AllFeaturesBrowsing[6], AllFeaturesBrowsing[7]]
     #, AllFeaturesBrowsing[1] não entra pq total n tem numero suficiente de linhas
     all_features_Brsg = [read_file(path) for path in file_paths_Brsg]
     num_lines_brsg = len(all_features_Brsg[0])
@@ -513,7 +555,7 @@ def profileClass(AllFeaturesBrowsing, profileClassFile):
     combined_content_str_brsg = "\n".join(combined_content_brsg)
 
     # print("Combined Content brsg:\n", combined_content_str_brsg)
-    
+
 
     non_empty_lines_brsg = [line for line in combined_content_str_brsg.splitlines() if line.strip()]
     # print("non_empty_lines_brsg:\n", len(non_empty_lines_brsg))
@@ -536,15 +578,15 @@ def profileClass(AllFeaturesBrowsing, profileClassFile):
     attackFileMedian = f'{profileClassFile}_features_w2_s1_median'
     attackFileStd = f'{profileClassFile}_features_w2_s1_std'
 
-    AllFeaturesAttack = [attackFileSum,   attackFileTotal,   attackFilePerc,   attackFileMax,   
+    AllFeaturesAttack = [attackFileSum,   attackFileTotal,   attackFilePerc,   attackFileMax,
                          attackFileMin,   attackFileAvg,   attackFileMedian,   attackFileStd]
 
     for fileFeatureAttack in AllFeaturesAttack:
-        if not exists(fileFeatureAttack):  
+        if not exists(fileFeatureAttack):
             print(f'No file named {fileFeatureAttack} founded.')
             exit(0)
 
-    file_paths_atck = [attackFileSum, attackFilePerc, attackFileMax, attackFileMin, attackFileAvg, attackFileMedian, attackFileStd] #, attackFileTotal não entra pq total n tem numero suficiente de linhas 
+    file_paths_atck = [attackFileSum, attackFilePerc, attackFileMax, attackFileMin, attackFileAvg, attackFileMedian, attackFileStd] #, attackFileTotal não entra pq total n tem numero suficiente de linhas
     all_features_atck = [read_file(path) for path in file_paths_atck]
     num_lines_atck = len(all_features_atck[0])
     assert all(len(feature_atck) == num_lines_atck for feature_atck in all_features_atck), "Files don't have the same number of lines"
@@ -561,28 +603,82 @@ def profileClass(AllFeaturesBrowsing, profileClassFile):
     # print("non_empty_lines_atck:\n", len(non_empty_lines_atck))
     oClass_atck= np.ones((len(non_empty_lines_atck),1))*1
     # print("oClass_brsg_sum---------->\n",oClass_atck)
-    
-
 
     ##########################JOIN FEATURES ATCK& BRSG###########################
     #############################################################################
     combined_content_arr_brsg = convert_to_array(combined_content_str_brsg)
     combined_content_arr_atck = convert_to_array(combined_content_str_atck)
+    # features = np.vstack((combined_content_arr_brsg, combined_content_arr_atck))
+    # oClass = np.vstack(( oClass_brsg, oClass_atck))
 
+    # print("len(combined_content_arr_brsg)", len(combined_content_arr_brsg))
+    # print("len(combined_content_arr_atck)", len(combined_content_arr_atck))
+    # print("len(oClass_brsg)", len(oClass_brsg))
+    # print("len(oClass_atck)", len(oClass_atck))
+
+    # print("combined_content_arr_brsg\n", features)
+    # print("oclaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaass", oClass)
+
+    percentage = 0.5
+
+    pB = int(len(combined_content_arr_brsg)*percentage) # 85 para test2.pcap
+    pA = int(len(combined_content_arr_atck)*percentage) # 323 para attack sequencial
+
+    trainFeatures_browsing = combined_content_arr_brsg[:pB, :]  #1ª metade das features brsg
+    trainFeatures_attack = combined_content_arr_atck[:pA, :]  #1ª metade das features atck
+
+    testFeatures_browsing = combined_content_arr_brsg[pB:,:] #2ª metade das features brsg
+    testFeatures_atck = combined_content_arr_atck[pA:,:] #2ª metade das features brsg
     
-    features = np.vstack((combined_content_arr_brsg, combined_content_arr_atck))
-    oClass = np.vstack(( oClass_brsg, oClass_atck))
+    i2train = np.vstack((trainFeatures_browsing)) # users bons ---> 1º metade features browsing
+    i2test = np.vstack((testFeatures_browsing)) # users bons ---> 2º metade features browsing
+    o2train = np.vstack((oClass_brsg[:pB])) # users bons ---> 1º metade oClass browsing
+    o2test = np.vstack((oClass_brsg[pB:]))  # users bons ---> 2º metade oClass browsing
 
+    i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack)) # junta attack
+    i3test = np.vstack((testFeatures_browsing, testFeatures_atck)) # junta attack
+    o3train = np.vstack((oClass_brsg[:pB], oClass_atck[:pA]))
+    o3test = np.vstack((oClass_brsg[pB:], oClass_atck[pA:]))
 
-    print("combined_content_arr_brsg\n", features)
-    print("oclaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaass", oClass)
-
-    print("Entrou")
-
-
-
+    # centroids_distances(                    trainFeatures_browsing, o2train,                                                                                  i3test,           o3test)
+    # centroids_distances_with_pca(           trainFeatures_browsing, o2train,    testFeatures_browsing,                       testFeatures_atck,                                 o3test)
+    # one_class_svm(                          i2train,                                                                                                          i3test,           o3test)
+    # one_class_svm_with_pca(                 trainFeatures_browsing,             testFeatures_browsing,                       testFeatures_atck,                                 o3test)
+    
+    # svm_classification(                     trainFeatures_browsing,             testFeatures_browsing, trainFeatures_attack, testFeatures_atck,     i3train,    i3test,  o3train, o3test)
+    svm_classification_with_pca(            trainFeatures_browsing,             testFeatures_browsing, trainFeatures_attack, testFeatures_atck,                        o3train, o3test)
+    # neural_network_classification(          trainFeatures_browsing,             testFeatures_browsing, trainFeatures_attack, testFeatures_atck,                        o3train, o3test)
+    # neural_network_classification_with_pca( trainFeatures_browsing,             testFeatures_browsing, trainFeatures_attack, testFeatures_atck,                        o3train, o3test)
+    waitforEnter(fstop=True)
 
 def main():
+    ans = input("Already created features?\n> ")
+    if ans == 'y':
+        profilebrsFile = "Captures/brwsg2Wind.pcap"
+        profilebrsFile = profilebrsFile.split('.')[0]
+        directory, filename = os.path.split(profilebrsFile)
+        directory = directory.replace('Captures', 'Features')
+        profilebrsFile = os.path.join(directory, filename)
+
+        file_suffixes = ['sum', 'total', 'percentages', 'max', 'min', 'avg', 'median', 'std']
+        file_vars = [f'{profilebrsFile}_features_w2_s1_{suffix}' for suffix in file_suffixes]
+
+        namesOfFeaturesFileBrowsing = []
+        for file_path in file_vars:
+            # Open and close the file here if required
+            # For example:
+            # with open(file_path, 'r') as file:
+            #     # Perform any file operations here
+            #     pass
+
+            # If you just need the file names, append the file path to the list
+            namesOfFeaturesFileBrowsing.append(file_path)
+
+        # Assuming extractFeatures is a function you have defined earlier
+        profileClass(namesOfFeaturesFileBrowsing, profileClassFile)
+        print("Profile created")
+        exit(0)
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', nargs='?', required=False, help='input pcap file', default=file)
     # parser.add_argument('-c', '--cnet', nargs='+', required=True, help='client network(s)')
@@ -627,13 +723,13 @@ def main():
     global last_ks
     global ipList
     global samplesMatrices
-    
+
 
     npkts = 0
     outc = []
     count = 0
     ipList = []
-    
+
     outfile = open(fileOutput,'w')
 
     print('{:6s} {:10s} {:10s} {:10s} {:10s}'.format('IP','\t\t\t  npktUp','     payUp','  npktDown','   payDown'))
@@ -669,15 +765,15 @@ def main():
     # print('-----------------------\n')
 
     # print(sumMatrices(samplesMatrices))
-    
+
     namesOfFeaturesFileBrowsing = extractFeatures(matrixSamplesFile)
 
     ans=input('Check if the features to both files are created!\nYou want to stop here?\n> ')
-     
+
     if  ans.lower() in ['yes', 'y']:
         print('Ok, bye!')
         sys.exit()
-    else:   
+    else:
         profileClass(namesOfFeaturesFileBrowsing, profileClassFile)
 
 

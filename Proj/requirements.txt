@@ -6,3 +6,6 @@ requests
 scipy
 matplotlib
 scikit-learn
+pandas
+seaborn
+openpyxl
