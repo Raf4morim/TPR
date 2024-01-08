@@ -204,18 +204,16 @@ def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_brow
         i3Atest_pca = pca.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
         print("i2train_pca", i2train_pca)
         print("i3Atest_pca", i3Atest_pca)
-        
-        actual_labels = [class_label[0] for class_label in o3test]
-
-        # Define kernels for One-Class SVM
-        kernels = {'linear': svm.OneClassSVM(gamma='scale', kernel='linear', nu=0.5),
-                   'rbf': svm.OneClassSVM(gamma='scale', kernel='rbf', nu=0.5),
-                   'poly': svm.OneClassSVM(gamma='scale', kernel='poly', nu=0.5, degree=2)}
 
         # Fit and predict for each kernel
-        for kernel, ocsvm_model in kernels.items():
+        for kernel in kernels:
+            actual_labels = [class_label[0] for class_label in o3test]
             print(kernel,"\n")
+            ocsvm_model = svm.OneClassSVM(gamma='scale', kernel=kernel, nu=0.5)
+            if kernel == 'poly':
+                ocsvm_model.degree = 2  # Apenas para o kernel polinomial
             ocsvm_model.fit(i2train_pca)
+            print("Passou fit?")
             predictions = ocsvm_model.predict(i3Atest_pca)
             predicted_labels = [1.0 if pred == -1 else 0.0 for pred in predictions]
             results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=n_components, threshold=None, kernel=kernel)
@@ -284,7 +282,7 @@ def svm_classification_pca(sil, components_to_test, trainFeatures_browsing,     
         kernels = {'linear': svm.SVC(kernel='linear'),'rbf': svm.SVC(kernel='rbf'),'poly': svm.SVC(kernel='poly', degree=2)}
 
         for kernel_name, svc_model in kernels.items():
-            svc_model.fit(i3train_pca, o3train.ravel())
+            svc_model.fit(i3train_pca, o3train)
             predictions = svc_model.predict(i3test_pca)
             resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=kernel_name)
 
@@ -307,19 +305,19 @@ def nn_classification(sil, trainFeatures_browsing, testFeatures_browsing, trainF
         silence = 'No Silence'    
     # Prepare the training and testing data
     i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
-    o3test = np.vstack((testFeatures_browsing, testFeatures_atck))
+    i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
 
     # Normalize the data
     scaler = MaxAbsScaler().fit(i3train)
     i3trainN = scaler.transform(i3train)
-    o3testN = scaler.transform(o3test)
+    i3testN = scaler.transform(i3test)
 
     # Initialize and train the neural network classifier
     alpha = 1
     max_iter = 100000
     clf = MLPClassifier(solver='lbfgs', alpha=alpha, hidden_layer_sizes=(20,), max_iter=max_iter)
-    clf.fit(i3trainN, o3train.ravel())
-    predictions = clf.predict(o3testN)
+    clf.fit(i3trainN, o3train)
+    predictions = clf.predict(i3testN)
 
     # Initialize results dictionary
     results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
@@ -361,7 +359,7 @@ def nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatur
         alpha = 1
         max_iter = 100000
         clf = MLPClassifier(solver='lbfgs', alpha=alpha, hidden_layer_sizes=(20,), max_iter=max_iter)
-        clf.fit(i3trainN_pca, o3train.ravel())
+        clf.fit(i3trainN_pca, o3train)
         predictions = clf.predict(i3CtestN_pca)
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
 

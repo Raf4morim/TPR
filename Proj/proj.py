@@ -48,17 +48,17 @@ slide = 12       # sliding window slide
 # NETClient = ['192.168.1.107/32']
 # file = 'Captures/test2.pcap'
 #############################################################
-NETClient = ['192.168.0.163']
-file = 'Captures/attackSmartWind.pcap'
+# NETClient = ['192.168.0.163']
+# file = 'Captures/attackSmartWind.pcap'
 #file = "Captures/attackSeqWind.pcap"
 # file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
-# file = 'Captures/brwsg1VM.pcap'
-# NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
+file = 'Captures/brwsg1VM.pcap'
+NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
 #############################################################
-# NETServer = ['157.240.212.60']  # Apenas para o do Wpp por agora
-NETServer = ['0.0.0.0/0']
+NETServer = ['157.240.212.60']  # Apenas para o do Wpp por agora
+# NETServer = ['0.0.0.0/0']
 
 samplesMatrices = []
 
