@@ -25,6 +25,10 @@ def extractStatsAdv(data,threshold=0):
     features = np.hstack((M1, Md1, Std1, silence_faux, activity_faux))
     return(features)
 
+
+1, Md1, Std1, len(silence), np.std(silence), np.mean(silence), len(activity), np.std(activity), np.mean(activity), , Md1, Std1, len(silence), np.std(silence), np.mean(silence), len(activity), np.std(activity), np.mean(activity)
+
+
 def extratctSilenceActivity(data,threshold=0):
     print("data[0]: ", data[0])
     if(data[0]<=threshold):

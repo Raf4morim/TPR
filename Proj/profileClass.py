@@ -219,14 +219,18 @@ def main():
     #Plot features
     # plt.figure(1)
     # plotFeatures(features,oClass,19, 27) # media download bytes vs std dowload bytes
-    plt.figure(2)
-    plotFeatures(features,oClass,16, 8) # media upload pkts vs max Upload bytes
-    plt.figure(3)
-    plotFeatures(features,oClass,16, 12) # media upload pkts vs min Upload bytes
-    plt.figure(4)
-    plotFeatures(features,oClass,16, 20) # media upload pkts vs mediana Upload bytes
-    plt.figure(5)
-    plotFeatures(features,oClass,16, 24) # media download bytes vs std dowload bytes
+    
+    
+    # plt.figure(2)
+    # plotFeatures(features,oClass,16, 8) # media upload pkts vs max Upload bytes
+    # plt.figure(3)
+    # plotFeatures(features,oClass,16, 12) # media upload pkts vs min Upload bytes
+    # plt.figure(4)
+    # plotFeatures(features,oClass,16, 20) # media upload pkts vs mediana Upload bytes
+    # plt.figure(5)
+    # plotFeatures(features,oClass,16, 24) # media download bytes vs std dowload bytes
+    
+    
     # plt.figure(3)
     # plotFeatures(features,oClass,16, 18) # std download bytes vs std dowload bytes
 
@@ -268,11 +272,12 @@ def main():
     results_cd = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
     df = pd.DataFrame(results_cd)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+
     results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
     df = pd.DataFrame(results_cd_pca)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    
-    
+
+
     # results_ocsvm = oc_svm(sil, i2train, i3test, o3test, bot)
     # df = pd.DataFrame(results_ocsvm)
     # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
@@ -292,14 +297,32 @@ def main():
     
     results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn)
-    print(df)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+
+
     results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn_pca)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    
-    mean = sum(bestF1Scores)/len(bestF1Scores)
-    print ("mean: ",mean)
+
+    bestF1Score_weigth = []
+    print("\nINITIAL bestF1Scores: ", bestF1Scores)
+    for idx, bestF1Score in enumerate(bestF1Scores):
+        # print("bestF1Score: ", bestF1Score)
+        # Se o índice for 0 ou 1 (centroid distance W/ and without pca)
+        if idx < 2:
+            bestF1Score_weigth.append((0.2*bestF1Score))
+        # Se o índice for 2 ou 3 (neural network W/ and without pca)
+        elif idx < 4:
+            bestF1Score_weigth.append((0.3*bestF1Score))
+    print("\nApos dar pesos bestF1Scores: ", bestF1Score_weigth)
+    # Soma de todas as pontuações ponderadas
+    sum_of_weighted_scores = sum(bestF1Score_weigth)
+    # Soma dos pesos aplicados (0.2 para os dois primeiros, 0.3 para os dois últimos)
+    total_weights = (0.2 + 0.2) + (0.3 + 0.3)
+    # Cálculo da média ponderada
+    weighted_average = sum_of_weighted_scores / total_weights
+    # print("Média Ponderada: ", weighted_average)
+
 
     #######################################################################
     #######################################################################

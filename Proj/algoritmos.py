@@ -88,7 +88,7 @@ def centroids_distances(sil, trainFeatures_browsing, o2train, i3test,   o3test, 
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=['Human',bot], yticklabels=['Human', bot])
+    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (Centroid-Based, Threshold: {best_result['Threshold']})")
@@ -112,7 +112,7 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
         # Apply PCA
         pca = PCA(n_components=n_components)
 
-        print(" min trainFeatures).shape ",min (np.vstack(trainFeatures).shape))
+        # print(" min trainFeatures).shape ",min (np.vstack(trainFeatures).shape))
         if n_components > min(np.vstack(trainFeatures).shape):
             print(f"Skipping n_components={n_components} as it exceeds limit.")
             continue
@@ -145,7 +145,7 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human',bot])
+    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.title(f"({silence}) Best on PCA Centroid-Based is Components: {best_result['Components']}, Threshold: {best_result['Threshold']})")
     plt.xlabel('Predicted')
     plt.ylabel('Real')
@@ -179,7 +179,7 @@ def oc_svm(sil, i2train,   i3test,   o3test, bot):
     
     # Plot best confusion matrix
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_confusion_matrix, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_confusion_matrix, annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted label')
     plt.ylabel('Actual label')
     plt.title(f'({silence}) Best Confusion Matrix OCSVM\n Best Kernel: {best_kernel}')
@@ -223,7 +223,7 @@ def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_brow
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (PCA OC SVM {best_result['Kernel']}, Nº Components: {best_result['Components']})")
@@ -257,7 +257,7 @@ def svm_classification(sil,  trainFeatures_browsing,     testFeatures_browsing, 
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.title(f"({silence}) Best Confusion Matrix SVM Kernel: {best_result['Kernel']}")
     plt.xlabel('Predicted')
     plt.ylabel('Real')
@@ -290,7 +290,7 @@ def svm_classification_pca(sil, components_to_test, trainFeatures_browsing,     
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (SVM PCA {best_result['Kernel']} with {best_result['Components']} PCA Components)")
@@ -329,7 +329,7 @@ def nn_classification(sil, trainFeatures_browsing, testFeatures_browsing, trainF
     best_cm = df.loc[best_f1_score, 'ConfusionMatrix']
 
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best on Neural Networks without PCA')
@@ -371,7 +371,7 @@ def nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatur
     best_components = df.loc[best_f1_score, 'Components']
 
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best Confusion Matrix: Neural Networks with {best_components} PCA Components')

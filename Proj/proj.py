@@ -37,8 +37,8 @@ warnings.filterwarnings('ignore')
 # up_count      up_payload      down_count      down_payload
 
 sampDelta = 5   # seconds
-widths = 120      # sliding window width
-slide = 12       # sliding window slide
+widths = 20      # sliding window width
+slide = 4       # sliding window slide
 #############################################################
 # file = 'test.pcap'
 # file = 'big.pcap'
@@ -48,14 +48,14 @@ slide = 12       # sliding window slide
 # NETClient = ['192.168.1.107/32']
 # file = 'Captures/test2.pcap'
 #############################################################
-# NETClient = ['192.168.0.163']
-# file = 'Captures/attackSmartWind.pcap'
+NETClient = ['192.168.0.163']
+file = 'Captures/attackSmartWind.pcap'
 #file = "Captures/attackSeqWind.pcap"
 # file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
-file = 'Captures/brwsg1VM.pcap'
-NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
+# file = 'Captures/brwsg1VM.pcap'
+# NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
 #############################################################
 NETServer = ['157.240.212.0/24']  # Apenas para o do Wpp por agora
 # NETServer = ['0.0.0.0/0']
@@ -250,7 +250,7 @@ def extractSilenceActivity(data, i, threshold=2):
     # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
     return save_silence_npkt_payload_ul_dl
 
-def extractStatsAdv(data, i, threshold=0):
+def extractStatsAdv(data, i, threshold=2):
     nSamp=data.shape
     M1=np.mean(data,axis=0)
     Md1=np.median(data,axis=0)
@@ -343,7 +343,9 @@ def extractFeatures(dataFile):
     print("\n\n### SLIDING Observation Windows with Length {} and Sliding {} ###".format(lengthObsWindow,slidingValue))
 
     iobs = 0
+    print(data)
     nSamples = len(data)
+    print(nSamples)
     nMetrics = len(data[0])
     avgMatrix = np.array([])
     medianMatrix = np.array([])
@@ -588,10 +590,10 @@ def main():
         q += 1
 
         # Enquanto n falarmos com o prof geramos assim as features
-        if q >= 84920:
+        # if q >= 84920:
 
         # if q >= 6562:
-            break
+            # break
         
         # seqFile 5850 - 6756
         # brwsg2Wind 6563
