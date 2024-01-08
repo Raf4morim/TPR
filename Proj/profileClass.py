@@ -217,10 +217,16 @@ def main():
     print('Classes Size: ', oClass.shape)
 
     #Plot features
-    plt.figure(1)
-    plotFeatures(features,oClass,19, 27) # media download bytes vs std dowload bytes
+    # plt.figure(1)
+    # plotFeatures(features,oClass,19, 27) # media download bytes vs std dowload bytes
     plt.figure(2)
-    plotFeatures(features,oClass,16, 19) # media upload pkts vs media dowload bytes
+    plotFeatures(features,oClass,16, 8) # media upload pkts vs max Upload bytes
+    plt.figure(3)
+    plotFeatures(features,oClass,16, 12) # media upload pkts vs min Upload bytes
+    plt.figure(4)
+    plotFeatures(features,oClass,16, 20) # media upload pkts vs mediana Upload bytes
+    plt.figure(5)
+    plotFeatures(features,oClass,16, 24) # media download bytes vs std dowload bytes
     # plt.figure(3)
     # plotFeatures(features,oClass,16, 18) # std download bytes vs std dowload bytes
 
@@ -286,6 +292,7 @@ def main():
     
     results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn)
+    print(df)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
     results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn_pca)

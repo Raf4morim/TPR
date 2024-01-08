@@ -30,8 +30,8 @@ def getMatchPredict(actual_labels, predicted_labels):
     return tp, tn, fp, fn 
 
 def printMetrics(tp, tn, fp, fn, accuracy, precision, recall, f1_score):
-    print("\nTrue Positives: {}, False Negatives: {}".format(tp,fn))
-    print("False Positives: {}, True Negatives: {}".format(fp,tn))
+    print("\nTrue Negatives: {}, False Positives: {} ".format(tn,fp))
+    print("False Negatives: {}, True Positives: {}".format(fn,tp))
     print("Accuracy: {}%".format(accuracy))
     print("Precision: {}%".format(precision))
     print("Recall: {}%".format(recall))

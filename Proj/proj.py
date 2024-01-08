@@ -57,7 +57,7 @@ slide = 12       # sliding window slide
 file = 'Captures/brwsg1VM.pcap'
 NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
 #############################################################
-NETServer = ['157.240.212.60']  # Apenas para o do Wpp por agora
+NETServer = ['157.240.212.0/24']  # Apenas para o do Wpp por agora
 # NETServer = ['0.0.0.0/0']
 
 samplesMatrices = []
@@ -213,7 +213,7 @@ def getPercentages(matrix, sum):
                 pass
     return tmpMatrix
 
-def extractSilenceActivity(data, i, threshold=0):
+def extractSilenceActivity(data, i, threshold=2):
     matriz = data
     # print("i[0] -> ", i[0])
     # print("i[1] -> ", i[1])
@@ -588,10 +588,10 @@ def main():
         q += 1
 
         # Enquanto n falarmos com o prof geramos assim as features
-        # if q >= 84920:
+        if q >= 84920:
 
         # if q >= 6562:
-            # break
+            break
         
         # seqFile 5850 - 6756
         # brwsg2Wind 6563
