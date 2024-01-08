@@ -118,7 +118,7 @@ def main():
     slide=12
     ############################## LOAD FILE BROWSING##############################
     #############################################################################
-    profilebrsFile = "Captures/brwsg2Wind.pcap"
+    profilebrsFile = "Captures/brwsg1VM.pcap"
     profilebrsFile = profilebrsFile.split('.')[0]
     directory, filename = os.path.split(profilebrsFile)
     directory = directory.replace('Captures', 'Features')
@@ -254,16 +254,41 @@ def main():
     o3test = np.vstack((oClass_brsg[pB:], oClass_atck[pA:]))
 
     print("\n#########no_silence#########")
-    # centroids_distances(trainFeatures_browsing, o2train, i3test, o3test, bot)
-    # centroids_distances_pca(trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
-    # oc_svm(i2train, i3test, o3test, bot)
-    oc_svm_pca(trainFeatures_browsing,            testFeatures_browsing,                       testFeatures_atck,                                 o3test, bot)
+    pcaComponents = [1, 5, 10, 15, 20]
+    sil = False
+    bestF1Scores = []
+    results_cd = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
+    df = pd.DataFrame(results_cd)
+    # print("\n\ndf.iloc['F1 Score']", df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
+    df = pd.DataFrame(results_cd_pca)
+    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_ocsvm = oc_svm(sil, i2train, i3test, o3test, bot)
+    # df = pd.DataFrame(results_ocsvm)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_ocsvm_pca = oc_svm_pca(sil, pcaComponents, trainFeatures_browsing,            testFeatures_browsing,                       testFeatures_atck,                                 o3test, bot)
+    # df = pd.DataFrame(results_ocsvm_pca)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+
     
-    # svm_classification(trainFeatures_browsing,    testFeatures_browsing, trainFeatures_attack, testFeatures_atck, i3train, i3test, o3train, o3test, bot)
-    # svm_classification_pca(trainFeatures_browsing,testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # nn_classification(trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # nn_classification_pca(trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     
+    # results_svm = svm_classification(sil, trainFeatures_browsing,    testFeatures_browsing, trainFeatures_attack, testFeatures_atck, i3train, i3test, o3train, o3test, bot)
+    # df = pd.DataFrame(results_svm)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_svm_pca = svm_classification_pca(sil, pcaComponents, trainFeatures_browsing,testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # df = pd.DataFrame(results_svm_pca)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    df = pd.DataFrame(results_nn)
+    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    df = pd.DataFrame(results_nn_pca)
+    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    
+    mean = sum(bestF1Scores)/len(bestF1Scores)
+    print ("mean: ",mean)
+
     #######################################################################
     #######################################################################
     #######################################################################
@@ -274,7 +299,7 @@ def main():
 
     ############################## LOAD FILE BROWSING##############################
     #############################################################################
-    profilebrsFile = "Captures/brwsg2Wind.pcap"
+    profilebrsFile = "Captures/brwsg1VM.pcap"
     profilebrsFile = profilebrsFile.split('.')[0]
     directory, filename = os.path.split(profilebrsFile)
     directory = directory.replace('Captures', 'Features')
@@ -283,6 +308,7 @@ def main():
     file_suffixes_s = ['sum_s', 'total_s', 'percentages_s', 'max_s', 'min_s', 'avg_s', 'median_s', 'std_s']
     file_vars_s = [f'{profilebrsFile}_features_w{width}_s{slide}_{suffix}' for suffix in file_suffixes_s]
 
+    # print("file_vars_s: ", file_vars_s)
     AllFeaturesBrowsing_s = []
     for file_path in file_vars_s:
         with open(file_path, 'r') as file:
@@ -397,17 +423,46 @@ def main():
     o3test = np.vstack((oClass_brsg_s[pB:], oClass_atck_s[pA:]))
 
     print("\n#########silence#########")
-    # centroids_distances(trainFeatures_browsing, o2train, i3test, o3test, bot)
-    # centroids_distances_pca(trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
-    # oc_svm(i2train, i3test, o3test, bot)
-    # oc_svm_pca(trainFeatures_browsing,            testFeatures_browsing,                       testFeatures_atck,                                 o3test, bot)
+    pcaComponents_s = [1, 5, 10, 15, 20]
+    sil = True
+
+    # results_cd_s = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
+    # results_cd_pca_s = centroids_distances_pca(sil, pcaComponents_s, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
+    # results_ocsvm_s = oc_svm(sil, i2train, i3test, o3test, bot)
+    # results_ocsvm_pca_s = oc_svm_pca(sil, pcaComponents_s, trainFeatures_browsing,            testFeatures_browsing,                       testFeatures_atck,                                 o3test, bot)
     
-    # svm_classification(trainFeatures_browsing,    testFeatures_browsing, trainFeatures_attack, testFeatures_atck, i3train, i3test, o3train, o3test, bot)
-    # svm_classification_pca(trainFeatures_browsing,testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # nn_classification(trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # nn_classification_pca(trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # results_svm_s = svm_classification(sil, trainFeatures_browsing,    testFeatures_browsing, trainFeatures_attack, testFeatures_atck, i3train, i3test, o3train, o3test, bot)
+    # results_svm_pca_s = svm_classification_pca(sil, pcaComponents_s, trainFeatures_browsing,testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # results_nn_s = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # results_nn_pca_s = nn_classification_pca(sil, pcaComponents_s, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     
     waitforEnter(fstop=True)
+
+
+
+
+    # res = detect_anomaly(pcaComponents, 1, False)
+
+
+    # print("\n--------------------Ensemble Stats--------------------")
+    # print("True positives: {}".format(res[0]))
+    # print("False positives: {}".format(res[1]))
+    # print("Accuracy: {}".format(res[2]))
+    # print("Precision: {}".format(res[3]))
+    # print("Recall: {}".format(res[4]))
+    # print("F1-score: {}".format(res[5]))
+
+
+    # resSilence = detect_anomaly(pcaComponentsSilence, 1, True)
+
+
+    # print("\n--------------------Ensemble Stats w/Silence--------------------")
+    # print("True positives: {}".format(resSilence[0]))
+    # print("False positives: {}".format(resSilence[1]))
+    # print("Accuracy: {}".format(resSilence[2]))
+    # print("Precision: {}".format(resSilence[3]))
+    # print("Recall: {}".format(resSilence[4]))
+    # print("F1-score: {}".format(resSilence[5]))
 
 
 if __name__ == '__main__':

@@ -38,15 +38,19 @@ def extratctSilenceActivity(data,threshold=0):
         print("data[i]: ", data[i])
 
         if(data[i-1]>threshold and data[i]<=threshold):
+            print("APPEEEEND SILENCIO",s)
             s.append(1)
         elif(data[i-1]<=threshold and data[i]>threshold):
+            print("APPEEEEND ATIIVIDDADE",a)
             a.append(1)
         elif (data[i-1]<=threshold and data[i]<=threshold):
+            print("INCREMEEEENTA SILENCIO",s[-1])
             s[-1]+=1
         else:
+            print("INCREMEEEENTA ATIIVIDDADE",a[-1])
             a[-1]+=1
-    print('sssssssssssssssssssssss ', s)        
-    print('aaaaaaaaaaaaaaaaaaaaaaa ', a)
+    # print('sssssssssssssssssssssss ', s)        
+    # print('aaaaaaaaaaaaaaaaaaaaaaa ', a)
     return(s,a)
 
 

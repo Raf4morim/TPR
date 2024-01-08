@@ -49,9 +49,9 @@ slide = 12       # sliding window slide
 # file = 'Captures/test2.pcap'
 #############################################################
 NETClient = ['192.168.0.163']
-# file = 'Captures/attackSmartWind.pcap'
+file = 'Captures/attackSmartWind.pcap'
 #file = "Captures/attackSeqWind.pcap"
-file = 'Captures/brwsg2Wind.pcap'
+# file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
 # file = 'Captures/brwsg1VM.pcap'
@@ -221,27 +221,31 @@ def extractSilenceActivity(data, i, threshold=0):
 
     save_silence_npkt_payload_ul_dl = []
         # up_count      up_payload      down_count      down_payload
-    for j in range(len(i[0])):
+    for j in range(4):
+        # print("\ni[0][j]: ", i[0][j])
         if(i[0][j]<=threshold):
             s=[1]
             a=[]
         else:
             s=[]
             a=[1]
-        # print(f'i[0][{j}] = {i[0][j]}')
-        # print(f'i[1][{j}] = {i[1][j]}')
-        if(i[0][j]>threshold and i[1][j]<=threshold):
-            s.append(1)
-        elif(i[0][j]<=threshold and i[1][j]>threshold):
-            a.append(1)
-        elif (i[0][j]<=threshold and i[1][j]<=threshold):
-            s[-1]+=1
-        else:
-            a[-1]+=1
+        for k in range(1,len(i)):
+            # print(f'i[k-1][j] = {i[k-1][j]}')
+            # print(f'i[k][j] = {i[k][j]}')
+            if(i[k-1][j]>threshold and i[k][j]<=threshold):
+                s.append(1)
+            elif(i[k-1][j]<=threshold and i[k][j]>threshold):
+                a.append(1)
+            elif (i[k-1][j]<=threshold and i[k][j]<=threshold):
+                # print("AQUIIIIIIIIIIIIIIIIIIIIII SILENCIO",s[-1])
+                s[-1]+=1
+            else:
+                # print("AQUIIIIIIIIIIIIIIIIIIIIII ATIIVIDDADE",a[-1])
+                a[-1]+=1
         save_silence_npkt_payload_ul_dl.append([s,a])
-        # save_silence_npkt_payload_ul_dl.append(a)
-        # print('ss ', s)
-        # print('aa ', a)
+            # save_silence_npkt_payload_ul_dl.append(a)
+    # print('\nss ', s)
+    # print('aa ', a)
     # print('save_silence_npkt_payload_ul_dl -> ', save_silence_npkt_payload_ul_dl)
     # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
     return save_silence_npkt_payload_ul_dl
@@ -363,8 +367,8 @@ def extractFeatures(dataFile):
         silMinMatrix = []
         n = 0
         for i in currentFlows:
-            # print('==================================================================',n)
-            # print("i -> ", str(i))
+            print('==================================================================',n)
+            print("i -> ", str(i))
             stats = extractStatsAdv(np.copy(currentData),i)
             avgMatrix = stats[0]
             medianMatrix = stats[1]
@@ -587,7 +591,7 @@ def main():
         # if q >= 84920:
 
         # if q >= 6562:
-        #     break
+            # break
         
         # seqFile 5850 - 6756
         # brwsg2Wind 6563
