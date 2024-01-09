@@ -22,20 +22,20 @@ import seaborn as sns
 import sys
 import pandas as pd
 
-def getMatchPredict(actual_labels, predicted_labels):
-    tp = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual == predicted == 1) # A previsão foi de que um evento ocorreria e ele realmente aconteceu.
-    tn = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual == predicted == 0) # A previsão foi de que um evento não ocorreria e ele realmente não aconteceu.
-    fp = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual != predicted and predicted == 1) # A previsão foi de que um evento ocorreria, mas ele não aconteceu
-    fn = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual != predicted and predicted == 0) # A previsão foi de que um evento não ocorreria, mas ele aconteceu.
-    return tp, tn, fp, fn 
+# def getMatchPredict(actual_labels, predicted_labels):
+#     tp = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual == predicted == 1) # A previsão foi de que um evento ocorreria e ele realmente aconteceu.
+#     tn = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual == predicted == 0) # A previsão foi de que um evento não ocorreria e ele realmente não aconteceu.
+#     fp = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual != predicted and predicted == 1) # A previsão foi de que um evento ocorreria, mas ele não aconteceu
+#     fn = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual != predicted and predicted == 0) # A previsão foi de que um evento não ocorreria, mas ele aconteceu.
+#     return tp, tn, fp, fn 
 
 def printMetrics(tp, tn, fp, fn, accuracy, precision, recall, f1_score):
-    print("\nTrue Negatives: {}, False Positives: {} ".format(tn,fp))
-    print("False Negatives: {}, True Positives: {}".format(fn,tp))
-    print("Accuracy: {}%".format(accuracy))
-    print("Precision: {}%".format(precision))
-    print("Recall: {}%".format(recall))
-    print("F1-Score: {}\n".format(f1_score))
+    print(f'\nTrue Positives: {tp}, False Negatives: {fn}')
+    print(f'False Positives: {fp}, True Negatives: {tn}')
+    print(f'Accuracy: {accuracy}')
+    print(f'Precision: {precision}')
+    print(f'Recall: {recall}')
+    print(f'F1-Score: {f1_score}\n')
 
 def calculate_metrics(tp, tn, fp, fn):
     accuracy = (tp + tn) / (tp + tn + fp + fn) * 100
@@ -45,9 +45,8 @@ def calculate_metrics(tp, tn, fp, fn):
     return accuracy, precision, recall, f1_score
 
 def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=None):
-    tp, tn, fp, fn = getMatchPredict(actual_labels, predicted_labels)
+    tn, fp, fn, tp = confusion_matrix(actual_labels, predicted_labels).ravel()
     accuracy, precision, recall, f1_score = calculate_metrics(tp, tn, fp, fn)
-    cm = confusion_matrix(actual_labels, predicted_labels)
 
     if kernel is not None:
         results['Kernel'].append(kernel.capitalize())
@@ -63,7 +62,7 @@ def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_component
     results['Precision'].append(precision)
     results['Recall'].append(recall)
     results['F1 Score'].append(f1_score)
-    results['ConfusionMatrix'].append(cm)
+    results['ConfusionMatrix'].append((tn, fp, fn, tp))
 
     return results
 
@@ -76,7 +75,7 @@ def centroids_distances(sil, trainFeatures_browsing, o2train, i3test,   o3test, 
     centroid = np.mean(trainFeatures_browsing[(o2train == 0).flatten()], axis=0)
     actual_labels = o3test.flatten()
 
-    threshold_values = [0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.2, 1.1, 1.5, 2.0, 3, 5, 6, 10]
+    threshold_values = [0.1, 0.2, 0.3, 0.4]
     results = {'Threshold': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
 
     for threshold in threshold_values:
@@ -87,8 +86,9 @@ def centroids_distances(sil, trainFeatures_browsing, o2train, i3test,   o3test, 
     df = pd.DataFrame(results)
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (Centroid-Based, Threshold: {best_result['Threshold']})")
@@ -144,8 +144,9 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
     df = pd.DataFrame(results)
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.title(f"({silence}) Best on PCA Centroid-Based is Components: {best_result['Components']}, Threshold: {best_result['Threshold']})")
     plt.xlabel('Predicted')
     plt.ylabel('Real')
@@ -162,24 +163,25 @@ def oc_svm(sil, i2train,   i3test,   o3test, bot):
     results = {'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
 
     actual_labels = [class_label[0] for class_label in o3test]
-
+    print(actual_labels)
     for kernel in kernels:
+        print("\n",kernel)
         ocsvm = svm.OneClassSVM(gamma='scale', kernel=kernel, nu=0.5, degree=2 if kernel == 'poly' else 3).fit(i2train)
         predictions = ocsvm.predict(i3test)
         predicted_labels = [1.0 if pred == -1 else 0.0 for pred in predictions]
         results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=kernel)
+        printMetrics(results['TP'],  results['TN'], results['FP'], results['FN'], results['Accuracy'], results['Precision'], results['Recall'], results['F1 Score'])
         
+
     df = pd.DataFrame(results)
     # Find best F1 score
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[df['F1 Score'].idxmax()]
-    best_confusion_matrix = df.loc[best_f1_score, 'ConfusionMatrix']
     best_kernel = df.loc[best_f1_score, 'Kernel']
-    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    
-    # Plot best confusion matrix
+    # printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_confusion_matrix, annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted label')
     plt.ylabel('Actual label')
     plt.title(f'({silence}) Best Confusion Matrix OCSVM\n Best Kernel: {best_kernel}')
@@ -201,9 +203,7 @@ def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_brow
         # Apply PCA
         pca = PCA(n_components=n_components)
         i2train_pca = pca.fit_transform(trainFeatures_browsing)
-        i3Atest_pca = pca.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
-        print("i2train_pca", i2train_pca)
-        print("i3Atest_pca", i3Atest_pca)
+        i3test_pca = pca.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
 
         # Fit and predict for each kernel
         for kernel in kernels:
@@ -214,7 +214,7 @@ def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_brow
                 ocsvm_model.degree = 2  # Apenas para o kernel polinomial
             ocsvm_model.fit(i2train_pca)
             print("Passou fit?")
-            predictions = ocsvm_model.predict(i3Atest_pca)
+            predictions = ocsvm_model.predict(i3test_pca)
             predicted_labels = [1.0 if pred == -1 else 0.0 for pred in predictions]
             results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=n_components, threshold=None, kernel=kernel)
 
@@ -222,8 +222,9 @@ def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_brow
     # Find the best result based on F1 score
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (PCA OC SVM {best_result['Kernel']}, Nº Components: {best_result['Components']})")
@@ -256,8 +257,9 @@ def svm_classification(sil,  trainFeatures_browsing,     testFeatures_browsing, 
     # Find the best result based on F1 score
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.title(f"({silence}) Best Confusion Matrix SVM Kernel: {best_result['Kernel']}")
     plt.xlabel('Predicted')
     plt.ylabel('Real')
@@ -289,8 +291,9 @@ def svm_classification_pca(sil, components_to_test, trainFeatures_browsing,     
     df = pd.DataFrame(results)
     best_result = df.loc[df['F1 Score'].idxmax()]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_result['ConfusionMatrix'], annot=True, cmap='Blues', fmt='d', xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (SVM PCA {best_result['Kernel']} with {best_result['Components']} PCA Components)")
@@ -326,10 +329,9 @@ def nn_classification(sil, trainFeatures_browsing, testFeatures_browsing, trainF
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    best_cm = df.loc[best_f1_score, 'ConfusionMatrix']
-
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best on Neural Networks without PCA')
@@ -366,12 +368,11 @@ def nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatur
     df = pd.DataFrame(results)
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
-    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    best_cm = df.loc[best_f1_score, 'ConfusionMatrix']
     best_components = df.loc[best_f1_score, 'Components']
-
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 4))
-    sns.heatmap(best_cm, annot=True, cmap='Blues', fmt='d',xticklabels=[bot, 'Human'], yticklabels=[bot, 'Human'])
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best Confusion Matrix: Neural Networks with {best_components} PCA Components')

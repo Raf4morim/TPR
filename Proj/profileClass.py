@@ -114,14 +114,14 @@ def clustering_with_dbscan(features, oClass):
         print('Obs: {:2} ({}): DBSCAN Cluster Label: -> {}'.format(i, Classes[oClass[i][0]], labels[i]))
 
 def main():
-    width=120
-    slide=12
+    width=20
+    slide=4
     ############################## LOAD FILE BROWSING##############################
     #############################################################################
     profilebrsFile = "Captures/brwsg1VM.pcap"
     profilebrsFile = profilebrsFile.split('.')[0]
     directory, filename = os.path.split(profilebrsFile)
-    directory = directory.replace('Captures', 'Features_Varios_IPs')
+    directory = directory.replace('Captures', 'Features_Normal')
     profilebrsFile = directory + '/' + filename
 
     file_suffixes = ['sum', 'total', 'percentages', 'max', 'min', 'avg', 'median', 'std']
@@ -162,13 +162,13 @@ def main():
 
     ############################## LOAD FILE ATTACK##############################
     #############################################################################
-    profileClassFile = 'Captures/attackSmartWind.pcap'
-    bot = 'Bot Smart'
-    # bot = 'Sequential Bot'
-    # profileClassFile = "Captures/attackSeqWind.pcap"
+    # profileClassFile = 'Captures/attackSmartWind.pcap'
+    # bot = 'Bot Smart'
+    bot = 'Sequential Bot'
+    profileClassFile = "Captures/attackSeqWind.pcap"
     profileClassFile = profileClassFile.split('.')[0]
     directory, filename = os.path.split(profileClassFile)
-    directory = directory.replace('Captures', 'Features_Varios_IPs')
+    directory = directory.replace('Captures', 'Features_SeqWind')
     profileClassFile = directory + '/' + filename
 
     file_suffixes = ['sum', 'total', 'percentages', 'max', 'min', 'avg', 'median', 'std']
@@ -264,7 +264,7 @@ def main():
     o3test = np.vstack((oClass_brsg[pB:], oClass_atck[pA:]))
 
     print("\n#########no_silence#########")
-    pcaComponents = [1, 5, 10, 15, 20]
+    pcaComponents = [5, 10, 15, 20]
     sil = False
     bestF1Scores = []
     
@@ -272,11 +272,9 @@ def main():
     results_cd = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
     df = pd.DataFrame(results_cd)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-
     results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
     df = pd.DataFrame(results_cd_pca)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-
 
     # results_ocsvm = oc_svm(sil, i2train, i3test, o3test, bot)
     # df = pd.DataFrame(results_ocsvm)
@@ -285,8 +283,6 @@ def main():
     # df = pd.DataFrame(results_ocsvm_pca)
     # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
-    
-    
     # results_svm = svm_classification(sil, trainFeatures_browsing,    testFeatures_browsing, trainFeatures_attack, testFeatures_atck, i3train, i3test, o3train, o3test, bot)
     # df = pd.DataFrame(results_svm)
     # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
@@ -294,34 +290,33 @@ def main():
     # df = pd.DataFrame(results_svm_pca)
     # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
     
-    
     results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-
-
     results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     df = pd.DataFrame(results_nn_pca)
     bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
     bestF1Score_weigth = []
     print("\nINITIAL bestF1Scores: ", bestF1Scores)
+    print("\nEnsemble (no silence): ")
     for idx, bestF1Score in enumerate(bestF1Scores):
         # print("bestF1Score: ", bestF1Score)
         # Se o índice for 0 ou 1 (centroid distance W/ and without pca)
         if idx < 2:
-            bestF1Score_weigth.append((0.2*bestF1Score))
-        # Se o índice for 2 ou 3 (neural network W/ and without pca)
-        elif idx < 4:
-            bestF1Score_weigth.append((0.3*bestF1Score))
+            bestF1Score_weigth.append((0.30*bestF1Score))
+        elif idx < 4: # Se o índice for 2 (neural network without pca)
+            bestF1Score_weigth.append((0.20*bestF1Score))
+        # elif idx < 4: # Se o índice for 3 (neural network with pca)
+        #     bestF1Score_weigth.append((0.20*bestF1Score))
     print("\nApos dar pesos bestF1Scores: ", bestF1Score_weigth)
     # Soma de todas as pontuações ponderadas
     sum_of_weighted_scores = sum(bestF1Score_weigth)
     # Soma dos pesos aplicados (0.2 para os dois primeiros, 0.3 para os dois últimos)
-    total_weights = (0.2 + 0.2) + (0.3 + 0.3)
+    total_weights = (0.3 + 0.3 + 0.20 + 0.20)
     # Cálculo da média ponderada
     weighted_average = sum_of_weighted_scores / total_weights
-    # print("Média Ponderada: ", weighted_average)
+    print("Média Ponderada: ", weighted_average)
 
 
     #######################################################################
@@ -471,34 +466,28 @@ def main():
     # results_nn_s = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     # results_nn_pca_s = nn_classification_pca(sil, pcaComponents_s, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
     
+    bestF1Score_weigth = []
+    print("\nINITIAL bestF1Scores: ", bestF1Scores)
+    print("\nEnsemble (silence): ")
+    for idx, bestF1Score in enumerate(bestF1Scores):
+        # print("bestF1Score: ", bestF1Score)
+        # Se o índice for 0 ou 1 (centroid distance W/ and without pca)
+        if idx < 2:
+            bestF1Score_weigth.append((0.30*bestF1Score))
+        elif idx < 4: # Se o índice for 2 (neural network without pca)
+            bestF1Score_weigth.append((0.20*bestF1Score))
+        # elif idx < 4: # Se o índice for 3 (neural network with pca)
+        #     bestF1Score_weigth.append((0.20*bestF1Score))
+    print("\nApos dar pesos bestF1Scores: ", bestF1Score_weigth)
+    # Soma de todas as pontuações ponderadas
+    sum_of_weighted_scores = sum(bestF1Score_weigth)
+    # Soma dos pesos aplicados (0.2 para os dois primeiros, 0.3 para os dois últimos)
+    total_weights = (0.3 + 0.3 + 0.20 + 0.20)
+    # Cálculo da média ponderada
+    weighted_average = sum_of_weighted_scores / total_weights
+    print("Média Ponderada Silencios: ", weighted_average)
+
     waitforEnter(fstop=True)
-
-
-
-
-    # res = detect_anomaly(pcaComponents, 1, False)
-
-
-    # print("\n--------------------Ensemble Stats--------------------")
-    # print("True positives: {}".format(res[0]))
-    # print("False positives: {}".format(res[1]))
-    # print("Accuracy: {}".format(res[2]))
-    # print("Precision: {}".format(res[3]))
-    # print("Recall: {}".format(res[4]))
-    # print("F1-score: {}".format(res[5]))
-
-
-    # resSilence = detect_anomaly(pcaComponentsSilence, 1, True)
-
-
-    # print("\n--------------------Ensemble Stats w/Silence--------------------")
-    # print("True positives: {}".format(resSilence[0]))
-    # print("False positives: {}".format(resSilence[1]))
-    # print("Accuracy: {}".format(resSilence[2]))
-    # print("Precision: {}".format(resSilence[3]))
-    # print("Recall: {}".format(resSilence[4]))
-    # print("F1-score: {}".format(resSilence[5]))
-
 
 if __name__ == '__main__':
     main()
