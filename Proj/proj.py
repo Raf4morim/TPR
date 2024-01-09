@@ -50,7 +50,7 @@ slide = 4       # sliding window slide
 #############################################################
 NETClient = ['192.168.0.163']
 file = 'Captures/attackSmartWind.pcap'
-#file = "Captures/attackSeqWind.pcap"
+# file = "Captures/attackSeqWind.pcap"
 # file = 'Captures/brwsg2Wind.pcap'
 #############################################################
 # file = 'Captures/attackSeqVM.pcap'
@@ -61,7 +61,7 @@ NETServer = ['157.240.212.0/24']  # Apenas para o do Wpp por agora
 # NETServer = ['0.0.0.0/0']
 
 samplesMatrices = []
-
+ipList = ['157.240.212.0/24']
 
 def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
     global scnets
@@ -84,50 +84,70 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
             print()
             for i in outc:
                 outfile.write(str(i[0]) + ' ' + str(i[1]) + ' ' + str(i[2]) + ' ' + str(i[3]) + ' ' + str(i[4]) + '\n')
+                if ipList == []:
+                    ipList.append('157.240.212.0/24')
                 print('{:21s} {:10d} {:10d} {:10d} {:10d}'.format(str(ipList[i[0]]), int(i[1]), int(i[2]), int(i[3]), int(i[4])))
             outfile.write('\n')
             # print(outc)
             outc = []
+            outc.append([0,0,0,0,0])
 
-        if IPAddress(srcIP) in scnets: # Upload
+        if IPAddress(srcIP) in scnets and int(lengthIP) > 200: # Upload
+            # try:
+            #     ipIndex = ipList.index(dstIP)
+            # except:
+            #     ipList.append(dstIP)
+            #     ipIndex = ipList.index(dstIP)
+            # inOutc = False
+            # outCount = 0
+            # for iterOutc in outc:
+            #     if iterOutc[0] == ipIndex:
+            #         inOutc = True
+            #         outIdx = outCount
+            #     else:
+            #         outCount += 1
+            # if not inOutc:
+            #     outc.append([ipIndex,0,0,0,0])
+            #     outIdx = len(outc)-1
+            # outc[outIdx][1] = outc[outIdx][1] + 1
+            # outc[outIdx][2] = outc[outIdx][2] + int(lengthIP)
+                
             try:
-                ipIndex = ipList.index(dstIP)
+                outc[0][1] = outc[0][1] + 1
+                outc[0][2] = outc[0][2] + int(lengthIP)
             except:
-                ipList.append(dstIP)
-                ipIndex = ipList.index(dstIP)
-            inOutc = False
-            outCount = 0
-            for iterOutc in outc:
-                if iterOutc[0] == ipIndex:
-                    inOutc = True
-                    outIdx = outCount
-                else:
-                    outCount += 1
-            if not inOutc:
-                outc.append([ipIndex,0,0,0,0])
-                outIdx = len(outc)-1
-            outc[outIdx][1] = outc[outIdx][1] + 1
-            outc[outIdx][2] = outc[outIdx][2] + int(lengthIP)
+                outc.append([0,0,0,0,0])
+                outc[0][1] = outc[0][1] + 1
+                outc[0][2] = outc[0][2] + int(lengthIP)
 
-        if IPAddress(dstIP) in scnets: # Download
+        if IPAddress(dstIP) in scnets and int(lengthIP) > 200: # Download
+            # try:
+            #     ipIndex = ipList.index(srcIP)
+            # except:
+            #     ipList.append(srcIP)
+            #     ipIndex = ipList.index(srcIP)
+            # inOutc = False
+            # outCount = 0
+            # for iterOutc in outc:
+            #     if iterOutc[0] == ipIndex:
+            #         inOutc = True
+            #         outIdx = outCount
+            #     else:
+            #         outCount += 1
+            # if not inOutc:
+            #     outc.append([ipIndex,0,0,0,0])
+            #     outIdx = len(outc)-1
+            # outc[outIdx][3] = outc[outIdx][3] + 1
+            # outc[outIdx][4] = outc[outIdx][4] + int(lengthIP)
+
             try:
-                ipIndex = ipList.index(srcIP)
+                outc[0][3] = outc[0][3] + 1
+                outc[0][4] = outc[0][4] + int(lengthIP)
             except:
-                ipList.append(srcIP)
-                ipIndex = ipList.index(srcIP)
-            inOutc = False
-            outCount = 0
-            for iterOutc in outc:
-                if iterOutc[0] == ipIndex:
-                    inOutc = True
-                    outIdx = outCount
-                else:
-                    outCount += 1
-            if not inOutc:
-                outc.append([ipIndex,0,0,0,0])
-                outIdx = len(outc)-1
-            outc[outIdx][3] = outc[outIdx][3] + 1
-            outc[outIdx][4] = outc[outIdx][4] + int(lengthIP)
+                outc.append([0,0,0,0,0])
+                outc[0][3] = outc[0][3] + 1
+                outc[0][4] = outc[0][4] + int(lengthIP)
+
 
         # print('= ' + str(srcIP) + ' / ' + str(dstIP) + ' / ' + str(lengthIP))
         # print(outc)
@@ -213,7 +233,7 @@ def getPercentages(matrix, sum):
                 pass
     return tmpMatrix
 
-def extractSilenceActivity(data, i, threshold=2):
+def extractSilenceActivity(data, i, threshold=0):
     matriz = data
     # print("i[0] -> ", i[0])
     # print("i[1] -> ", i[1])
@@ -250,7 +270,7 @@ def extractSilenceActivity(data, i, threshold=2):
     # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
     return save_silence_npkt_payload_ul_dl
 
-def extractStatsAdv(data, i, threshold=2):
+def extractStatsAdv(data, i, threshold=0):
     nSamp=data.shape
     M1=np.mean(data,axis=0)
     Md1=np.median(data,axis=0)
