@@ -27,7 +27,7 @@ contacts = [
     # "351915086600",
 ]
 
-# Function to wait for user input
+# Function to wait for usersmar input
 def wait_for_input():
     input("Press Enter to stop sending messages...\n")
     print("Stopping message sending...")
@@ -52,12 +52,12 @@ while True:
         message_counter = 0  # Reset the counter after the pause
 
     contact = random.choice(contacts)
-    short_message_length = random.randint(3, 9)
-    medium_message_length = random.randint(10, 49)
-    long_message_length = random.randint(50, 100)
+    short_message_length = random.randint(3, 29)
+    medium_message_length = random.randint(30,99)
+    long_message_length = random.randint(100,500)
     
     # Choose between short and long message lengths with different weights
-    message_length = random.choices([short_message_length, medium_message_length, long_message_length], weights=[0.7, 0.2, 0.1])[0] # mais provavel 1 pessoa escrever pouco do que mt xD
+    message_length = random.choices([short_message_length, medium_message_length, long_message_length], weights=[0.5, 0.3, 0.2])[0] # mais provavel 1 pessoa escrever pouco do que mt xD
     
     # Create a message with random characters of the defined length
     message = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz ', k=message_length))
@@ -66,9 +66,18 @@ while True:
     message_counter += 1
     
     # Set the time interval based on the message length
-    if message_length <= 10:
-        time.sleep(random.uniform(1, 3))
-    elif message_length > 11 and message_length <= 40 :
-        time.sleep(random.uniform(4, 10))  
+    if message_length <= 30:
+        short_message_time = random.gauss(6, 3)
+        if short_message_time < 0: short_message_time = 0
+        elif short_message_time > 12: short_message_time = 12
+        time.sleep(short_message_time)
+    elif message_length > 30 and message_length <= 100:
+        medium_message_time = random.gauss(10, 5)
+        if medium_message_time < 0: medium_message_time = 0
+        elif medium_message_time > 20: medium_message_time = 20
+        time.sleep(medium_message_time)
     else:
-        time.sleep(random.uniform(11, 15))
+        long_message_time = random.gauss(15, 10)
+        if long_message_time < 0: long_message_time = 0
+        elif long_message_time > 30: long_message_time = 30
+        time.sleep(long_message_time)
