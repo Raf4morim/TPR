@@ -1,4 +1,6 @@
 import sys
+import tkinter as tk
+from tkinter import ttk
 import argparse
 from netaddr import IPNetwork, IPAddress, IPSet
 import pyshark
@@ -36,6 +38,66 @@ warnings.filterwarnings('ignore')
 ######################################################################################
 #                                      PROFILE                                       #
 ######################################################################################
+def viewerAllPlotsMixed(features, features_s, oClass):
+    fIdxName = [
+        'Npkt Up Sum',    'Nbyte Up Sum',    'Npkt Down Sum',    'Nbyte Down Sum', 
+        'Npkt Up %',      'Nbyte Up %',      'Npkt Down %',      'Nbyte Down %', 
+        'Npkt Up Max',    'Nbyte Up Max',    'Npkt Down Max',    'Nbyte Down Max', 
+        'Npkt Up Min',    'Nbyte Up Min',    'Npkt Down Min',    'Nbyte Down Min', 
+        'Npkt Up Average','Nbyte Up Average','Npkt Down Average','Nbyte Down Average', 
+        'Npkt Up Median', 'Nbyte Up Median', 'Npkt Down Median', 'Nbyte Down Median', 
+        'Npkt Up Std',    'Nbyte Up Std',    'Npkt Down Std',    'Nbyte Down Std']
+
+    
+
+    def create_gui():
+        # plotFeatures_mix(fIdxName, oClass, features, features_s, f1index=1, f2index=None,f1index_s=None, f2index_s=2, label="(x=Normal vs y=Sil)")
+        def plot_and_close():
+            # Determina os índices e se eles são silêncios
+            f1index = fIdxName.index(combo_f1.get()) if var_f1.get() == 'Normal' else None
+            f2index = fIdxName.index(combo_f2.get()) if var_f2.get() == 'Normal' else None
+            f1index_s = fIdxName.index(combo_f1.get()) if var_f1.get() == 'Silence' else None
+            f2index_s = fIdxName.index(combo_f2.get()) if var_f2.get() == 'Silence' else None
+            label1 = var_f1.get()
+            label2 =var_f2.get()
+
+            plotFeatures_mix(fIdxName, oClass, features, features_s, f1index, f2index, f1index_s, f2index_s, label1, label2)
+            # root.destroy()
+        root = tk.Tk()
+        root.title("Feature Selection")
+
+        # Criação dos menus suspensos e seletores para o índice x
+        label_f1 = ttk.Label(root, text="Índice x:")
+        label_f1.pack()
+        combo_f1 = ttk.Combobox(root, values=fIdxName)
+        combo_f1.pack()
+        var_f1 = tk.StringVar(value='Normal')
+        radio_f1_normal = ttk.Radiobutton(root, text="Normal", variable=var_f1, value='Normal')
+        radio_f1_silencio = ttk.Radiobutton(root, text="Silence", variable=var_f1, value='Silence')
+        radio_f1_normal.pack()
+        radio_f1_silencio.pack()
+
+        # Criação dos menus suspensos e seletores para o índice y
+        label_f2 = ttk.Label(root, text="Índice y:")
+        label_f2.pack()
+        combo_f2 = ttk.Combobox(root, values=fIdxName)
+        combo_f2.pack()
+        var_f2 = tk.StringVar(value='Normal')
+        radio_f2_normal = ttk.Radiobutton(root, text="Normal", variable=var_f2, value='Normal')
+        radio_f2_silencio = ttk.Radiobutton(root, text="Silence", variable=var_f2, value='Silence')
+        radio_f2_normal.pack()
+        radio_f2_silencio.pack()
+
+        # Botão para plotar
+        plot_button = ttk.Button(root, text="Plotar", command=plot_and_close)
+        plot_button.pack()
+
+        return root
+
+    # Executar a GUI
+    root = create_gui()
+    root.mainloop()
+
 def waitforEnter(fstop=False):
     if fstop:
         if sys.version_info[0] == 2:
@@ -60,29 +122,31 @@ Classes = {0: 'Browsing', 1: 'Attack'}
 plt.ion()
 nfig = 1
 
-
-def plotFeatures(features,oClass,f1index=0,f2index=1, label=" No silence: "):
-    nObs,nFea=features.shape
-    colors=['b','r']
-    #blue BROWSING
-    #RED for Attack
-
-    for i in range(nObs):
-        plt.plot(features[i,f1index],features[i,f2index],'o'+colors[int(oClass[i])])
-
-    findex_name = [
-        'Npkt Upload Sum','Nbyte Upload Sum','Npkt Download Sum','Nbyte Download Sum', 
-        'Npkt Upload Percentage','Nbyte Upload Percentage','Npkt Download Percentage','Nbyte Download Percentage', 
-        'Npkt Upload Max','Nbyte Upload Max','Npkt Download Max','Nbyte Download Max', 
-        'Npkt Upload Min','Nbyte Upload Min','Npkt Download Min','Nbyte Download Min', 
-        'Npkt Upload Average','Nbyte Upload Average','Npkt Download Average','Nbyte Download Average', 
-        'Npkt Upload Median','Nbyte Upload Median','Npkt Download Median','Nbyte Download Median', 
-        'Npkt Upload Std','Nbyte Upload Std','Npkt Download Std','Nbyte Download Std'] 
-
-    # Adicionar nomes aos eixos e título
-    plt.xlabel(f'{findex_name[f1index]}')
-    plt.ylabel(f'{findex_name[f2index]}')
-    plt.title(f'{label} {findex_name[f1index]} vs {findex_name[f2index]}')
+def plotFeatures_mix(findex_name, oClass, features, features_s, f1index=None, f2index=None, f1index_s=None, f2index_s=None, label1=None, label2=None):
+    nObs, _ = features.shape # Num de obs é igual para os 2
+    colors = ['b', 'r']  # blue for BROWSING, RED for Attack
+    plt.figure()
+    if f1index_s is None and f2index_s is None: # se não houver silencios
+        for i in range(nObs):
+            plt.plot(features[i, f1index], features[i, f2index], 'o' + colors[int(oClass[i])])
+    if f1index_s is not None and f2index_s is None: # se x é silencio e y é normal
+        for i in range(nObs):
+            plt.plot(features_s[i, f1index_s], features[i, f2index], 'o' + colors[int(oClass[i])])
+    if f1index_s is None and f2index_s is not None: # se x é normal e y é silencio
+        for i in range(nObs):
+            plt.plot(features[i, f1index], features_s[i, f2index_s], 'o' + colors[int(oClass[i])])
+    if f1index_s is not None and f2index_s is not None: # se só houver silencios
+        for i in range(nObs):
+            plt.plot(features_s[i, f1index_s], features_s[i, f2index_s], 'o' + colors[int(oClass[i])])
+    if label1 is None or label2 is None:
+        print("You should specify labels, p.e.: \"(x=Sil y=Normal)\"")
+        exit(0)
+    else: 
+        xlabel_text = findex_name[f1index] if f1index is not None else findex_name[f1index_s] # Obter os x' e y' ou do normal ou do silencio
+        ylabel_text = findex_name[f2index] if f2index is not None else findex_name[f2index_s]
+        plt.title(f'{label1} {xlabel_text} vs {label2} {ylabel_text}')    
+        plt.xlabel(f'{label1} {xlabel_text}')
+        plt.ylabel(f'{label2} {ylabel_text}')
 
     plt.show()
     waitforEnter()
@@ -95,24 +159,6 @@ def convert_to_array(combined_content_str):
     lines = combined_content_str.split('\n')
     return np.array([line.split() for line in lines if line.strip()], dtype=float)
 
-def clustering_with_kmeans(features, oClass):
-    print('\n-- Clustering with K-Means --')
-    kmeans = KMeans(n_clusters=3, random_state=0, n_init="auto")
-    labels = kmeans.fit_predict(features)
-
-    for i in range(len(labels)):
-        print('Obs: {:2} ({}): K-Means Cluster Label: -> {}'.format(i, Classes[oClass[i][0]], labels[i]))
-
-
-def clustering_with_dbscan(features, oClass):
-    print('\n-- Clustering with DBSCAN --')
-    features = StandardScaler().fit_transform(features)
-    db = DBSCAN(eps=0.5, min_samples=10).fit(features)
-    labels = db.labels_
-
-    for i in range(len(labels)):
-        print('Obs: {:2} ({}): DBSCAN Cluster Label: -> {}'.format(i, Classes[oClass[i][0]], labels[i]))
-
 def main():
     width=20
     slide=4
@@ -121,7 +167,7 @@ def main():
     profilebrsFile = "Captures/brwsg1VM.pcap"
     profilebrsFile = profilebrsFile.split('.')[0]
     directory, filename = os.path.split(profilebrsFile)
-    directory = directory.replace('Captures', 'Features_Normal')
+    directory = directory.replace('Captures', 'Features_brwsg1VM')
     profilebrsFile = directory + '/' + filename
 
     file_suffixes = ['sum', 'total', 'percentages', 'max', 'min', 'avg', 'median', 'std']
@@ -168,7 +214,7 @@ def main():
     profileClassFile = "Captures/attackSeqWind.pcap"
     profileClassFile = profileClassFile.split('.')[0]
     directory, filename = os.path.split(profileClassFile)
-    directory = directory.replace('Captures', 'Features_SeqWind')
+    directory = directory.replace('Captures', 'Features_attackSeqWind')
     profileClassFile = directory + '/' + filename
 
     file_suffixes = ['sum', 'total', 'percentages', 'max', 'min', 'avg', 'median', 'std']
@@ -216,24 +262,6 @@ def main():
     print('Train Stats Features Size:',features.shape)
     print('Classes Size: ', oClass.shape)
 
-    #Plot features
-    # plt.figure(1)
-    # plotFeatures(features,oClass,19, 27) # media download bytes vs std dowload bytes
-    
-    
-    # plt.figure(2)
-    # plotFeatures(features,oClass,16, 8) # media upload pkts vs max Upload bytes
-    # plt.figure(3)
-    # plotFeatures(features,oClass,16, 12) # media upload pkts vs min Upload bytes
-    # plt.figure(4)
-    # plotFeatures(features,oClass,16, 20) # media upload pkts vs mediana Upload bytes
-    # plt.figure(5)
-    # plotFeatures(features,oClass,16, 24) # media download bytes vs std dowload bytes
-    
-    
-    # plt.figure(3)
-    # plotFeatures(features,oClass,16, 18) # std download bytes vs std dowload bytes
-
     # print("len(combined_content_arr_brsg)", len(combined_content_arr_brsg))
     # print("len(combined_content_arr_atck)", len(combined_content_arr_atck))
     # print("len(oClass_brsg)", len(oClass_brsg))
@@ -269,12 +297,12 @@ def main():
     bestF1Scores = []
     
     
-    results_cd = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
-    df = pd.DataFrame(results_cd)
-    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
-    df = pd.DataFrame(results_cd_pca)
-    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_cd = centroids_distances(sil, trainFeatures_browsing, o2train, i3test, o3test, bot)
+    # df = pd.DataFrame(results_cd)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
+    # df = pd.DataFrame(results_cd_pca)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
     # results_ocsvm = oc_svm(sil, i2train, i3test, o3test, bot)
     # df = pd.DataFrame(results_ocsvm)
@@ -290,12 +318,12 @@ def main():
     # df = pd.DataFrame(results_svm_pca)
     # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
     
-    results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    df = pd.DataFrame(results_nn)
-    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    df = pd.DataFrame(results_nn_pca)
-    bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # df = pd.DataFrame(results_nn)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
+    # df = pd.DataFrame(results_nn_pca)
+    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
     bestF1Score_weigth = []
     print("\nINITIAL bestF1Scores: ", bestF1Scores)
@@ -329,11 +357,6 @@ def main():
 
     ############################## LOAD FILE BROWSING##############################
     #############################################################################
-    # profilebrsFile = "Captures/brwsg1VM.pcap"
-    # profilebrsFile = profilebrsFile.split('.')[0]
-    # directory, filename = os.path.split(profilebrsFile)
-    # directory = directory.replace('Captures', 'Features_Varios_IPs')
-    # profilebrsFile = directory + '/' + filename
 
     file_suffixes_s = ['sum_s', 'total_s', 'percentages_s', 'max_s', 'min_s', 'avg_s', 'median_s', 'std_s']
     file_vars_s = [f'{profilebrsFile}_features_w{width}_s{slide}_{suffix}' for suffix in file_suffixes_s]
@@ -415,21 +438,18 @@ def main():
     combined_content_arr_brsg_s = convert_to_array(combined_content_str_brsg_s)
     combined_content_arr_atck_s = convert_to_array(combined_content_str_atck_s)
     
-    
-    
     features_s = np.vstack((combined_content_arr_brsg_s, combined_content_arr_atck_s))
     oClass_s = np.vstack(( oClass_brsg_s, oClass_atck_s))
 
     print('Train Stats Features Size Silence:',features_s.shape)
     print('Classes Size Silence: ', oClass_s.shape)
 
-    #Plot features
-    # plt.figure(11)
-    # plotFeatures(features_s,oClass_s,19, 27, 'Silence: ') # media download bytes vs std dowload bytes
-    # plt.figure(22)
-    # plotFeatures(features_s,oClass_s,16, 19, 'Silence: ') # media upload pkts vs media dowload bytes
-    # plt.figure(3)
-    # plotFeatures(features,oClass,16, 18) # std download bytes vs std dowload bytes
+    viewerAllPlotsMixed(features, features_s, oClass)
+
+
+
+
+
 
     percentage = 0.5
 
