@@ -34,6 +34,9 @@ import pandas as pd
 from algoritmos import *
 warnings.filterwarnings('ignore')
 
+scenario = 0
+
+
 # up_count      up_payload      down_count      down_payload
 
 sampDelta = 5   # seconds
@@ -48,8 +51,14 @@ slide = 4       # sliding window slide
 # NETClient = ['192.168.1.107/32']
 # file = 'Captures/test2.pcap'
 #############################################################
-NETClient = ['192.168.0.163']
-file = 'Captures/attackSmartWind.pcap'
+NETClient = ['192.168.0.164']
+# file = 'Captures/4brsg1h30.pcap'
+# file = 'Captures/4seq1h30.pcap'
+file = 'Captures/4smart1h30.pcap'
+#############################################################
+# NETClient = ['192.168.58.48']
+# file = 'Captures/newAttackSeq.pcap'
+# file = 'Captures/attackSmart.pcap'
 # file = "Captures/attackSeqWind.pcap"
 # file = 'Captures/brwsg2Wind.pcap'
 #############################################################
@@ -92,7 +101,7 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
             outc = []
             outc.append([0,0,0,0,0])
 
-        if IPAddress(srcIP) in scnets and int(lengthIP) > 200: # Upload
+        if IPAddress(srcIP) in scnets and int(lengthIP) > 150: # Upload
             # try:
             #     ipIndex = ipList.index(dstIP)
             # except:
@@ -120,7 +129,7 @@ def pktHandler(timestamp, srcIP, dstIP, lengthIP, sampDelta, outfile):
                 outc[0][1] = outc[0][1] + 1
                 outc[0][2] = outc[0][2] + int(lengthIP)
 
-        if IPAddress(dstIP) in scnets and int(lengthIP) > 200: # Download
+        if IPAddress(dstIP) in scnets and int(lengthIP) > 150: # Download
             # try:
             #     ipIndex = ipList.index(srcIP)
             # except:
@@ -611,7 +620,8 @@ def main():
 
         # Enquanto n falarmos com o prof geramos assim as features
         # if q >= 84920:
-
+        # if q >= 199786:
+        #     break
         # if q >= 6562:
             # break
         
