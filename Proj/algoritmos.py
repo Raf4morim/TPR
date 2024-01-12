@@ -1,19 +1,10 @@
 import numpy as np
 from os.path import exists
-from pyclbr import Class
-import numpy as np
-import scipy.stats as stats
-import scipy.signal as signal
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.discriminant_analysis import StandardScaler
 from sklearn.preprocessing import MaxAbsScaler
-from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
-from sklearn.svm import SVC
-from sklearn.svm import OneClassSVM
 from scipy.stats import multivariate_normal
 from sklearn.metrics import confusion_matrix
 from sklearn.neural_network import MLPClassifier
@@ -46,6 +37,7 @@ def calculate_metrics(tp, tn, fp, fn):
 
 def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=None):
     tn, fp, fn, tp = confusion_matrix(actual_labels, predicted_labels).ravel()
+    # print("CM ULALALAALALALALALA: ",CM)
     accuracy, precision, recall, f1_score = calculate_metrics(tp, tn, fp, fn)
 
     if kernel is not None:
@@ -62,24 +54,34 @@ def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_component
     results['Precision'].append(precision)
     results['Recall'].append(recall)
     results['F1 Score'].append(f1_score)
-    results['ConfusionMatrix'].append((tn, fp, fn, tp))
+    results['ConfusionMatrix'].append((tp, fn, fp, tn))
+
+    # print("\nresults['TP']:\n", results['TP'])
+    # print("results['FP']:\n", results['FP'])
+    # print("results['TN']:\n", results['TN'])
+    # print("results['FN']:\n", results['FN'])
+    # print("results['ConfusionMatrix']:\n\n", results['ConfusionMatrix'])
 
     return results
 
-def centroids_distances(sil, trainFeatures_browsing, o2train, i3test,   o3test, bot):
+def centroids_distances(sil, i2train, o2train, i3test,   o3test, bot):
     print("----------------centroids_distances----------------")
     if sil:
         silence = 'Silence'
     else:
         silence = 'No Silence'
-    centroid = np.mean(trainFeatures_browsing[(o2train == 0).flatten()], axis=0)
+    scaler = StandardScaler()
+    i2train_scaled = scaler.fit_transform(i2train)
+    i3test_scaled = scaler.transform(i3test)
+
+    centroid = np.mean(i2train_scaled[(o2train == 0).flatten()], axis=0)
     actual_labels = o3test.flatten()
 
     threshold_values = [0.1, 0.2, 0.3, 0.4]
     results = {'Threshold': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
 
     for threshold in threshold_values:
-        distances = np.linalg.norm(i3test - centroid, axis=1)
+        distances = np.linalg.norm(i3test_scaled - centroid, axis=1)
         predicted_labels = (distances > threshold).astype(float) * 1.0  # Anomalies are labeled as 1.0
         results = resultsConfusionMatrix(actual_labels, predicted_labels, results, threshold=threshold)
 
@@ -97,36 +99,11 @@ def centroids_distances(sil, trainFeatures_browsing, o2train, i3test,   o3test, 
 
 def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass, testFeatures_normal, testFeatures_dns, o3testClass, bot):
     print("----------------centroids_distances_pca----------------")
-    if sil:
-        silence = 'Silence'
-    else:
-        silence = 'No Silence'
+    silence = 'Silence' if sil else 'No Silence'
     results = {'Components': [],'Threshold': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
 
     for n_components in components_to_test:
-        # Skipping components that exceed limit
-        if n_components > min(trainFeatures.shape):
-            print(f"Skipping n_components={n_components} as it exceeds limit.")
-            continue
-
-        # Apply PCA
         pca = PCA(n_components=n_components)
-
-        # print(" min trainFeatures).shape ",min (np.vstack(trainFeatures).shape))
-        if n_components > min(np.vstack(trainFeatures).shape):
-            print(f"Skipping n_components={n_components} as it exceeds limit.")
-            continue
-
-        try:
-            pca = PCA(n_components=n_components)
-            i2train_pca = pca.fit_transform(np.vstack(trainFeatures))
-
-            # Your existing code follows...
-
-        except ValueError as e:
-            print(f"Error fitting PCA with n_components={n_components}: {e}")
-            continue
-
         i2train_pca = pca.fit_transform(np.vstack(trainFeatures))
         centroids = np.mean(i2train_pca[(o2trainClass == 0).flatten(), :], axis=0)
 
@@ -153,151 +130,95 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
     plt.show()
     return results
 
-def oc_svm(sil, i2train,   i3test,   o3test, bot):
+def oc_svm(sil, trainFeatures, testFeatures_normal, testFeatures_dns, o3testClass, bot):
     print("----------------oc_svm----------------")
-    if sil:
-        silence = 'Silence'
-    else:
-        silence = 'No Silence'
-    kernels = ['linear', 'rbf', 'poly']
+    silence = 'Silence' if sil else 'No Silence'
     results = {'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
 
-    actual_labels = [class_label[0] for class_label in o3test]
-    print(actual_labels)
-    for kernel in kernels:
-        print("\n",kernel)
-        ocsvm = svm.OneClassSVM(gamma='scale', kernel=kernel, nu=0.5, degree=2 if kernel == 'poly' else 3).fit(i2train)
-        predictions = ocsvm.predict(i3test)
-        predicted_labels = [1.0 if pred == -1 else 0.0 for pred in predictions]
-        results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=kernel)
-        printMetrics(results['TP'],  results['TN'], results['FP'], results['FN'], results['Accuracy'], results['Precision'], results['Recall'], results['F1 Score'])
-        
+    i2train = np.vstack(trainFeatures)
+    i3Atest = np.vstack((testFeatures_normal, testFeatures_dns))
 
+    kernels = ['linear', 'rbf', 'poly']
+    svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5) for k in kernels]
+
+    for kernel, model in zip(kernels, svm_models):
+        model.fit(i2train)
+        predictions = model.predict(i3Atest)
+
+        # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
+        predictions = np.where(predictions == -1, 0, 1)
+
+        # Use the resultsConfusionMatrix function to calculate and store results
+        # print("kernel: ", kernel)
+        results = resultsConfusionMatrix(o3testClass.flatten(), predictions, results, kernel=kernel)
+
+    # Find the index of the row with the best F1 score
     df = pd.DataFrame(results)
-    # Find best F1 score
-    best_f1_score = df['F1 Score'].idxmax()
-    best_result = df.loc[df['F1 Score'].idxmax()]
-    best_kernel = df.loc[best_f1_score, 'Kernel']
-    # printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
-    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    best_f1_index = df['F1 Score'].idxmax()
+
+    # Print the best results
+    best_result = df.iloc[best_f1_index]
+    printMetrics(best_result['TP'], best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+
+    # Plot the best confusion matrix
+    best_confusion_matrix = np.array(df.loc[best_f1_index, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(best_confusion_matrix,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted label')
-    plt.ylabel('Actual label')
-    plt.title(f'({silence}) Best Confusion Matrix OCSVM\n Best Kernel: {best_kernel}')
+    plt.ylabel('Real label')
+    plt.title(f'({silence}) Best Confusion Matrix OC SVM - {df.loc[best_f1_index, "Kernel"].capitalize()} Kernel')
     plt.show()
+
     return results
 
-def oc_svm_pca(sil, n_components_list, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
+def oc_svm_pca(sil, max_pca_components, trainFeatures, testFeatures_normal, testFeatures_dns, o3testClass, bot):
     print("----------------oc_svm_pca----------------")
-    if sil:
-        silence = 'Silence'
-    else:
-        silence = 'No Silence'
-    kernels = ['linear', 'rbf', 'poly']
-    results = {'Kernel': [] ,'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+    silence = 'Silence' if sil else 'No Silence'
+    results = {'Components': [], 'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
 
-    for n_components in n_components_list:
+    i2train = np.vstack(trainFeatures)
+    i3Atest = np.vstack((testFeatures_normal, testFeatures_dns))
+
+    kernels = ['linear', 'rbf', 'poly']
+    
+
+    # Define the range of PCA components
+    for n_components in max_pca_components:
+        # print("n_components: ", n_components)
+        i2train_pca = i2train
+        i3Atest_pca = i3Atest
+        svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5) for k in kernels]
+
+        for kernel, model in zip(kernels, svm_models):
+            model.fit(i2train_pca)
+            predictions = model.predict(i3Atest_pca)
+
+            # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
+            predictions = np.where(predictions == -1, 0, 1)
+
+            # Use the resultsConfusionMatrix function to calculate and store results
+            # print("kernel: ", kernel)
+            results = resultsConfusionMatrix(o3testClass.flatten(), predictions, results, kernel=kernel, n_components=n_components)
+
         
-        print("n_components: ",n_components)
-        # Apply PCA
-        pca = PCA(n_components=n_components)
-        i2train_pca = pca.fit_transform(trainFeatures_browsing)
-        i3test_pca = pca.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
-
-        # Fit and predict for each kernel
-        for kernel in kernels:
-            actual_labels = [class_label[0] for class_label in o3test]
-            print(kernel,"\n")
-            ocsvm_model = svm.OneClassSVM(gamma='scale', kernel=kernel, nu=0.5)
-            if kernel == 'poly':
-                ocsvm_model.degree = 2  # Apenas para o kernel polinomial
-            ocsvm_model.fit(i2train_pca)
-            print("Passou fit?")
-            predictions = ocsvm_model.predict(i3test_pca)
-            predicted_labels = [1.0 if pred == -1 else 0.0 for pred in predictions]
-            results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=n_components, threshold=None, kernel=kernel)
-
+    # Find the index of the row with the best F1 score
     df = pd.DataFrame(results)
-    # Find the best result based on F1 score
-    best_result = df.loc[df['F1 Score'].idxmax()]
-    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
-    sns.heatmap(cm_2x2,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
-    plt.xlabel('Predicted')
-    plt.ylabel('Real')
-    plt.title(f"({silence}) Best Confusion Matrix (PCA OC SVM {best_result['Kernel']}, Nº Components: {best_result['Components']})")
+    best_f1_index = df['F1 Score'].idxmax()
+    best_components = df.loc[best_f1_index, 'Components']
+
+    # Print the best results
+    best_result = df.iloc[best_f1_index]
+    printMetrics(best_result['TP'], best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+
+    # Plot the best confusion matrix
+    best_confusion_matrix = np.array(df.loc[best_f1_index, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(best_confusion_matrix,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted label')
+    plt.ylabel('Real label')
+    plt.title(f'({silence}) Best Confusion Matrix OC SVM PCA- {df.loc[best_f1_index, "Kernel"].capitalize()} Kernel\nWith {best_components} PCA Components')
     plt.show()
-    return results
 
-def svm_classification(sil,  trainFeatures_browsing,     testFeatures_browsing,      trainFeatures_attack,       testFeatures_atck,  i3train,    i3test,        o3train,        o3test, bot):
-    print("----------------svm_classification----------------")
-    if sil:
-        silence = 'Silence'
-    else:
-        silence = 'No Silence'
-    i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
-    i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
-    actual_labels = o3test.flatten()
-
-    kernels = ['linear', 'rbf', 'poly']
-    results = {'Kernel': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
-
-    for kernel in kernels:
-        print("Entrou no for")
-        model = svm.SVC(kernel=kernel, degree=2 if kernel == 'poly' else 3)
-        print("Entrou no for")
-        model.fit(i3train, o3train)
-        predicted_labels = model.predict(i3Ctest)
-        print("PREDICT LABELSS: ",predicted_labels)
-        results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=kernel)
-
-    df = pd.DataFrame(results)
-    # Find the best result based on F1 score
-    best_result = df.loc[df['F1 Score'].idxmax()]
-    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
-    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
-    plt.title(f"({silence}) Best Confusion Matrix SVM Kernel: {best_result['Kernel']}")
-    plt.xlabel('Predicted')
-    plt.ylabel('Real')
-    plt.show()
-    return results
-
-def svm_classification_pca(sil, components_to_test, trainFeatures_browsing,     testFeatures_browsing,      trainFeatures_attack,       testFeatures_atck,   o3train,        o3test, bot):
-    print("----------------svm_classification_pca----------------")
-    if sil:
-        silence = 'Silence'
-    else:
-        silence = 'No Silence'    
-    i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
-    i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
-    results = {'Kernel': [],'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
-    for n_components in components_to_test:
-        pca = PCA(n_components=n_components)
-        i3train_pca = pca.fit_transform(i3train)
-        i3test_pca = pca.transform(i3test)
-
-        # Define kernels for SVM
-        kernels = {'linear': svm.SVC(kernel='linear'),'rbf': svm.SVC(kernel='rbf'),'poly': svm.SVC(kernel='poly', degree=2)}
-
-        for kernel_name, svc_model in kernels.items():
-            svc_model.fit(i3train_pca, o3train)
-            predictions = svc_model.predict(i3test_pca)
-            resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=kernel_name)
-
-    df = pd.DataFrame(results)
-    best_result = df.loc[df['F1 Score'].idxmax()]
-    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
-    cm_2x2 = np.array(best_result['ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
-    sns.heatmap(cm_2x2,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
-    plt.xlabel('Predicted')
-    plt.ylabel('Real')
-    plt.title(f"({silence}) Best Confusion Matrix (SVM PCA {best_result['Kernel']} with {best_result['Components']} PCA Components)")
-    plt.show()
     return results
 
 def nn_classification(sil, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):

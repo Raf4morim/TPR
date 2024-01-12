@@ -42,29 +42,14 @@ scenario = 0
 sampDelta = 5   # seconds
 widths = 20      # sliding window width
 slide = 4       # sliding window slide
-#############################################################
-# file = 'test.pcap'
-# file = 'big.pcap'
-# NETClient = ['172.20.10.0/25']
-# NETClient = ['192.168.24.0/24']
-#############################################################
-# NETClient = ['192.168.1.107/32']
-# file = 'Captures/test2.pcap'
+
 #############################################################
 NETClient = ['192.168.0.164']
 # file = 'Captures/4brsg1h30.pcap'
+file = 'Captures/5brsg1h30_lowFreq.pcap'
+
 # file = 'Captures/4seq1h30.pcap'
-file = 'Captures/4smart1h30.pcap'
-#############################################################
-# NETClient = ['192.168.58.48']
-# file = 'Captures/newAttackSeq.pcap'
-# file = 'Captures/attackSmart.pcap'
-# file = "Captures/attackSeqWind.pcap"
-# file = 'Captures/brwsg2Wind.pcap'
-#############################################################
-# file = 'Captures/attackSeqVM.pcap'
-# file = 'Captures/brwsg1VM.pcap'
-# NETClient = ['10.0.2.15']   # file = 'Captures/browsingAmorimVM.pcap'
+# file = 'Captures/4smart1h30.pcap'
 #############################################################
 NETServer = ['157.240.212.0/24']  # Apenas para o do Wpp por agora
 # NETServer = ['0.0.0.0/0']
@@ -243,15 +228,8 @@ def getPercentages(matrix, sum):
     return tmpMatrix
 
 def extractSilenceActivity(data, i, threshold=0):
-    matriz = data
-    # print("i[0] -> ", i[0])
-    # print("i[1] -> ", i[1])
-    # print("len(i[0] -> ", len(i[0]))
-
     save_silence_npkt_payload_ul_dl = []
-        # up_count      up_payload      down_count      down_payload
     for j in range(4):
-        # print("\ni[0][j]: ", i[0][j])
         if(i[0][j]<=threshold):
             s=[1]
             a=[]
@@ -259,22 +237,15 @@ def extractSilenceActivity(data, i, threshold=0):
             s=[]
             a=[1]
         for k in range(1,len(i)):
-            # print(f'i[k-1][j] = {i[k-1][j]}')
-            # print(f'i[k][j] = {i[k][j]}')
             if(i[k-1][j]>threshold and i[k][j]<=threshold):
                 s.append(1)
             elif(i[k-1][j]<=threshold and i[k][j]>threshold):
                 a.append(1)
             elif (i[k-1][j]<=threshold and i[k][j]<=threshold):
-                # print("AQUIIIIIIIIIIIIIIIIIIIIII SILENCIO",s[-1])
                 s[-1]+=1
             else:
-                # print("AQUIIIIIIIIIIIIIIIIIIIIII ATIIVIDDADE",a[-1])
                 a[-1]+=1
         save_silence_npkt_payload_ul_dl.append([s,a])
-            # save_silence_npkt_payload_ul_dl.append(a)
-    # print('\nss ', s)
-    # print('aa ', a)
     # print('save_silence_npkt_payload_ul_dl -> ', save_silence_npkt_payload_ul_dl)
     # up_count_S up_count_A     up_payload_S up_payload_A    down_count_S down_count_A   down_payload_S down_payload_A
     return save_silence_npkt_payload_ul_dl
@@ -291,10 +262,7 @@ def extractStatsAdv(data, i, threshold=0):
     activity_faux = []
 
     for coluna in range(len(i[0])):
-        # print("\nUOOOOOOOOOOOOOOOOOOOOOOOOOI -> ",extractSilenceActivity(data, i, threshold)[coluna]) # ---------[0, 2]
         extractSil,extractAct =extractSilenceActivity(data, i, threshold)[coluna]
-        # print("\n1UOOOOOOOOOOOOOOOOOOOOOOOOOI -> ", extractSil) # -------- 0
-        # print("2UOOOOOOOOOOOOOOOOOOOOOOOOOI -> ",extractAct) # -------- 2
         if len(extractSil) > 0:
             silence_faux.append([np.sum(extractSil), np.mean(extractSil), np.std(extractSil), np.median(extractSil), np.max(extractSil), np.min(extractSil)])
         else:
@@ -303,21 +271,16 @@ def extractStatsAdv(data, i, threshold=0):
             activity_faux.append([np.sum(extractAct), np.mean(extractAct), np.std(extractAct), np.median(extractAct), np.max(extractAct), np.min(extractAct)])
         else:
             activity_faux.append([0,0,0,0,0,0])
-
-    # print('silence_faux -> ', silence_faux)
-    # print('activity_faux -> ', activity_faux)
         # i ->  [[  2 482   0   0] [  1 241   0   0]]
         # npku(sum-media-desvio-mediana-max-min)    nbytesu(sum-media-desvio-mediana-max-min)  npkd(sum-media-desvio-mediana-max-min)  nbytesd(sum-media-desvio-mediana-max-min)
         # silence_faux ->  [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [2, 2.0, 0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2]]
         # activity_faux ->  [[2, 2.0, w0.0, 2.0, 2, 2], [2, 2.0, 0.0, 2.0, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
     return [M1, Md1, Std1, silence_faux, activity_faux]
 
-
 def extractStats(data):
     M1 = np.mean(data, axis=0)
     Md1 = np.median(data, axis=0)
     Std1 = np.std(data, axis=0)
-    # features = np.hstack((M1, Md1, Std1))
     return [M1, Md1, Std1]
 
 # Função para imprimir e escrever dados sem silêncios
@@ -335,7 +298,6 @@ def print_and_write_silence(data_matrix, out_file, ip_list, format_string, title
     for i in range(len(data_matrix)):
         print(format_string.format(str(ip_list[i]), *data_matrix[i][4:]))
         out_file.write(' '.join(map(str, data_matrix[i][4:])) + '\n')
-
 
 def extractFeatures(dataFile):
     global ipList, samplesMatrices
@@ -380,8 +342,6 @@ def extractFeatures(dataFile):
     medianMatrix = np.array([])
     stdMatrix = np.array([])
 
-    # print('================================================================== ' + str((data[0][0])))
-    # ================================================================== [  2 482   0   0]
     while iobs*slidingValue <= nSamples-lengthObsWindow:
         currentData = np.copy(data[iobs*slidingValue:iobs*slidingValue+lengthObsWindow])
         # print('==================================================================\n'+str(currentData))
@@ -432,13 +392,6 @@ def extractFeatures(dataFile):
             silPercentageMatrix = getPercentages(silSumMatrix, silSumCol)
 
             n += 1
-        # print("\nSUMMMMMM  ", silSumMatrix)
-        # print("AVGGGGGG  ", silAvgMatrix)
-        # print("STDDDDDD  ", silStdMatrix)
-        # print("MEDIANNN  ", silMedMatrix)
-
-        # for s_metric in range(0, len(silAvgMatrix)):
-        #     print(float(silAvgMatrix[s_metric]))
 
         print('\n-------------------------')
         print('   ' + str(iobs+1))
@@ -557,8 +510,6 @@ def extractFeatures(dataFile):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', nargs='?', required=False, help='input pcap file', default=file)
-    # parser.add_argument('-c', '--cnet', nargs='+', required=True, help='client network(s)')
-    # parser.add_argument('-s', '--snet', nargs='+', required=True, help='service network(s)')
     parser.add_argument('-c', '--cnet', nargs='+', required=False, help='client network(s)', default=NETClient)
     parser.add_argument('-s', '--snet', nargs='+', required=False, help='service network(s)', default=NETServer)
     args = parser.parse_args()
