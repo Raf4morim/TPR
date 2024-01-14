@@ -7,11 +7,16 @@ from os.path import exists
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from sklearn import neural_network
+from sklearn.svm import OneClassSVM
+from sklearn.neural_network import MLPClassifier
+
 from sklearn.model_selection import train_test_split
 from scipy.stats import multivariate_normal
 from sklearn.metrics import accuracy_score, precision_score, confusion_matrix
 import sys
 import warnings
+
 from algoritmos import *
 warnings.filterwarnings('ignore')
 
@@ -25,7 +30,6 @@ bot = 'Smart Bot'
 def calling_algoritmos(sil, pcaComponents,
                         trainFeatures_browsing, testFeatures_browsing, i2train, i2test, o2train, o2test, 
                         trainFeatures_attack,   testFeatures_atck,     i3train, i3test, o3train, o3test):
-    bestF1Scores = []
     # results_cd = centroids_distances(sil, i2train, o2train, i3test, o3test, bot)
     # # df = pd.DataFrame(results_cd)
     # # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
@@ -33,41 +37,102 @@ def calling_algoritmos(sil, pcaComponents,
     # # df = pd.DataFrame(results_cd_pca)
     # # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
-    results_ocsvm = oc_svm(sil, i2train, testFeatures_browsing, testFeatures_atck, o3test, bot)
-    # df = pd.DataFrame(results_ocsvm)
-    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    results_ocsvm_pca = oc_svm_pca(sil, pcaComponents, trainFeatures_browsing,            testFeatures_browsing,                       testFeatures_atck,                                 o3test, bot)
-    # df = pd.DataFrame(results_ocsvm_pca)
-    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    bestF1Scores = {}
 
-    results_nn = nn_classification(sil, trainFeatures_browsing,     testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # df = pd.DataFrame(results_nn)
-    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    results_nn_pca = nn_classification_pca(sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck,    o3train, o3test, bot)
-    # df = pd.DataFrame(results_nn_pca)
-    # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
+    # Função para extrair e armazenar os melhores scores
+    def store_best_scores(algorithm_name, df):
+        best_row = df.iloc[df['F1 Score'].idxmax()]
+        bestF1Scores[algorithm_name] = {
+            'TP': best_row['TP'],
+            'FP': best_row['FP'],
+            'TN': best_row['TN'],
+            'FN': best_row['FN'],
+            'F1 Score': best_row['F1 Score']
+        }
 
-    # bestF1Score_weigth = []
-    # print("\nINITIAL bestF1Scores: ", bestF1Scores)
-    # print("\nEnsemble (no silence): ")
-    # for idx, bestF1Score in enumerate(bestF1Scores):
-    #     # print("bestF1Score: ", bestF1Score)
-    #     # Se o índice for 0 ou 1 (centroid distance W/ and without pca)
-    #     if idx < 2:
-    #         bestF1Score_weigth.append((0.30*bestF1Score))
-    #     elif idx < 4: # Se o índice for 2 (neural network without pca)
-    #         bestF1Score_weigth.append((0.20*bestF1Score))
-    #     # elif idx < 4: # Se o índice for 3 (neural network with pca)
-    #     #     bestF1Score_weigth.append((0.20*bestF1Score))
-    # print("\nApos dar pesos bestF1Scores: ", bestF1Score_weigth)
-    # # Soma de todas as pontuações ponderadas
-    # sum_of_weighted_scores = sum(bestF1Score_weigth)
-    # # Soma dos pesos aplicados (0.2 para os dois primeiros, 0.3 para os dois últimos)
-    # total_weights = (0.3 + 0.3 + 0.20 + 0.20)
-    # # Cálculo da média ponderada
-    # weighted_average = sum_of_weighted_scores / total_weights
-    # print("Média Ponderada: ", weighted_average)
+    data2ensemble_pred=[]
+    data2ensemble_actual=[]
+    # Processamento e armazenamento dos melhores scores para cada algoritmo
+    # One Class SVM
+    results_ocsvm, data2ensemble_pred, data2ensemble_actual = oc_svm(data2ensemble_pred, data2ensemble_actual, sil, i2train, i3test, o3test, bot)
+    print("\none class svm")
+    df_ocsvm = pd.DataFrame(results_ocsvm)
+    store_best_scores('one class svm', df_ocsvm)
+    print("1len(data2ensemble_pred): ", len(data2ensemble_pred))
 
+    # One Class SVM com PCA
+    results_ocsvm_pca, data2ensemble_pred, data2ensemble_actual = oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
+    print("\none class svm pca")
+    df_ocsvm_pca = pd.DataFrame(results_ocsvm_pca)
+    store_best_scores('one class svm pca', df_ocsvm_pca)
+    print("2len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # Rede Neural
+    results_nn, data2ensemble_pred, data2ensemble_actual = nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\nneural network")
+    df_nn = pd.DataFrame(results_nn)
+    store_best_scores('neural network', df_nn)
+    print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # Rede Neural com PCA
+    results_nn_pca, data2ensemble_pred, data2ensemble_actual = nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\nneural network pca")
+    df_nn_pca = pd.DataFrame(results_nn_pca)
+    store_best_scores('neural network pca', df_nn_pca)
+    # print("data2ensemble_pred:\n", data2ensemble_pred)
+    # print("data2ensemble_actual:\n", data2ensemble_actual)
+    print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # Rede Neural com PCA
+    # results_ensemble = ensemble(data2ensemble_pred, data2ensemble_actual)
+    results_ensemble = ensemble(sil, data2ensemble_pred, o3test.flatten(), bot)
+    print("\nEnsemble")
+    df_ensemble = pd.DataFrame(results_ensemble)
+    store_best_scores('Ensemble', df_ensemble)
+    # print("data2ensemble_pred:\n", data2ensemble_pred)
+    # print("data2ensemble_actual:\n", data2ensemble_actual)
+    # print("5len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # Exibindo os melhores scores
+    print("\nMelhores F1 Scores por Algoritmo:")
+    for alg, scores in bestF1Scores.items():
+        print(f"{alg}: \t\t{scores}")
+        
+    algoritmos = list(bestF1Scores.keys())
+
+    tp_bar = [bestF1Scores[alg]['TP'] for alg in algoritmos]
+    fn_bar = [bestF1Scores[alg]['FN'] for alg in algoritmos]
+    fp_bar = [bestF1Scores[alg]['FP'] for alg in algoritmos]
+    tn_bar = [bestF1Scores[alg]['TN'] for alg in algoritmos]
+
+    # Plotagem
+    N = len(algoritmos)  # Número de algoritmos
+    ind = np.arange(N)  # Posições dos grupos
+    width = 0.15  # Largura das barras
+
+    fig, ax = plt.subplots()
+
+    p1 = ax.bar(ind, tp_bar, width, color=(0, 0.8, 0),         edgecolor="k", label="tp")
+    p2 = ax.bar(ind+width, fn_bar, width, color=(0.8, 0, 0),   edgecolor="k", label="fn")
+    p3 = ax.bar(ind+2*width, fp_bar, width, color=(0.5, 0, 0), edgecolor="k", label="fp")
+    p4 = ax.bar(ind+3*width, tn_bar, width, color=(0, 0.5, 0), edgecolor="k", label="tn")
+
+    # Anotações do gráfico
+    ax.set_xticks(ind)
+    ax.set_xticklabels(algoritmos, rotation=40, ha="right")
+    # plt.ylim([0, 1])
+    plt.title("F1 Scores por Algoritmo")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+    
+    
 
 
 def viewerAllPlotsMixed(features, features_s, oClass, bot):
@@ -283,7 +348,7 @@ def main():
     o3test = np.vstack((oClass_brsg[pB:], oClass_atck[pA:]))
 
     print("\n#########no_silence#########")
-    pcaComponents = [1, 5, 10, 15, 20]
+    pcaComponents = [1, 2, 3, 4,5, 10, 15, 20, 25]
     sil = False
   
     
