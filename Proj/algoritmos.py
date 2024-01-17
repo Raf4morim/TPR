@@ -174,27 +174,20 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures_browsing, o2t
         plt.savefig(namePlot)
     return results
 
-def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, i2train, i3test, o3test, bot):
+def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
     print("----------------oc_svm----------------")
     silence = 'Silence' if sil else 'No Silence'
     results = {'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
     
-    # trainScaler = MaxAbsScaler().fit(i2train)
-    # scaled_train = trainScaler.transform(i2train)
-    # scaled_test = trainScaler.transform(i3test)
-    scaler = StandardScaler()
-    scaled_train = scaler.fit_transform(i2train)
-    scaled_test = scaler.transform(i3test)
-
-    i2train = np.vstack(scaled_train)
-    i3Atest = np.vstack((scaled_test))
+    # scaler = MaxAbsScaler()
+    i2train = trainFeatures_browsing
+    i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
 
     kernels = ['linear', 'rbf', 'poly']
-    svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5, degree=2 if k == 'poly' else 3) for k in kernels]
-        
+    svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5, degree=2 if k == 'poly' else 3).fit(i2train) for k in kernels]
     for kernel, model in zip(kernels, svm_models):
-        model.fit(i2train)
-        predictions = model.predict(i3Atest)
+        # model.fit(i2train)
+        predictions = model.predict(i3test)
         # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
         predictions = np.where(predictions == -1, 0, 1)
         data2ensemble_pred.append(predictions.tolist())
@@ -244,15 +237,13 @@ def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components
         scaler = MaxAbsScaler()
         scaled_train = scaler.fit_transform(trainFeatures_browsing)
         scaled_test = scaler.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
-        # scaled_test = scaler.transform(np.vstack((testFeatures_normal)))
-        # scaled_test = scaler.transform(np.vstack((testFeatures_dns)))
         # Aplicação da PCA
         pca = PCA(n_components=n_components)
         i2train_pca = pca.fit_transform(scaled_train)
         i3Atest_pca = pca.transform(scaled_test)
-        svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5, degree=2 if k == 'poly' else 3) for k in kernels]
+        svm_models = [svm.OneClassSVM(gamma='scale', kernel=k, nu=0.5, degree=2 if k == 'poly' else 3).fit(i2train_pca) for k in kernels]
         for kernel, model in zip(kernels, svm_models):
-            model.fit(i2train_pca)
+            # model.fit(i2train_pca)
             predictions = model.predict(i3Atest_pca)
             # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
             predictions = np.where(predictions == -1, 0, 1)
@@ -263,7 +254,7 @@ def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components
             # print("kernel: ", kernel)
             results = resultsConfusionMatrix(o3test.flatten(), predictions, results, kernel=kernel, n_components=n_components)
             # print(results)
-        
+
     # Find the index of the row with the best F1 score
     df = pd.DataFrame(results)
     best_f1_index = df['F1 Score'].idxmax()
@@ -299,17 +290,16 @@ def nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatur
     i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
     i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
 
-    # Normalize the data
     scaler = MaxAbsScaler().fit(i3train)
-    i3trainN = scaler.transform(i3train)
-    i3testN = scaler.transform(i3test)
+    i3train = scaler.transform(i3train)
+    i3test = scaler.transform(i3test)
 
     # Initialize and train the neural network classifier
     alpha = 1
     max_iter = 100000
     clf = MLPClassifier(solver='lbfgs', alpha=alpha, hidden_layer_sizes=(20,), max_iter=max_iter)
-    clf.fit(i3trainN, o3train)
-    predictions = clf.predict(i3testN)
+    clf.fit(i3train, o3train)
+    predictions = clf.predict(i3test)
     # print(predictions)
     data2ensemble_pred.append(predictions.tolist()) #
     data2ensemble_actual.append(o3test.flatten().tolist()) #
@@ -455,13 +445,13 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
     plt.title(f'({silence}) Best Confusion Matrix Ensemble')
     # plt.show()
 
-    # if bot == 'Smart Bot':
-    #     namePlot = f"ResultadosPlotSmart/({silence})Ensemble.png"
-    #     os.makedirs(os.path.dirname(namePlot), exist_ok=True)
-    #     plt.savefig(namePlot)
-    # elif bot == 'Sequential Bot':
-    #     namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
-    #     os.makedirs(os.path.dirname(namePlot), exist_ok=True)
-    #     plt.savefig(namePlot)
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})Ensemble.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
 
     return final_result

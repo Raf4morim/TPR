@@ -34,7 +34,7 @@ def calling_algoritmos(sil, pcaComponents,
     # results_cd = centroids_distances(sil, i2train, o2train, i3test, o3test, bot)
     # # df = pd.DataFrame(results_cd)
     # # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
-    # results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing,            testFeatures_atck,                                 o3test, bot)
+    # results_cd_pca = centroids_distances_pca(sil, pcaComponents, trainFeatures_browsing, o2train, testFeatures_browsing, testFeatures_atck, o3test, bot)
     # # df = pd.DataFrame(results_cd_pca)
     # # bestF1Scores.append(df.iloc[df['F1 Score'].idxmax()]['F1 Score'])
 
@@ -55,7 +55,7 @@ def calling_algoritmos(sil, pcaComponents,
     data2ensemble_actual=[]
     # Processamento e armazenamento dos melhores scores para cada algoritmo
     # One Class SVM
-    results_ocsvm, data2ensemble_pred, data2ensemble_actual = oc_svm(data2ensemble_pred, data2ensemble_actual, sil, i2train, i3test, o3test, bot)
+    results_ocsvm, data2ensemble_pred, data2ensemble_actual = oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
     print("\none class svm")
     df_ocsvm = pd.DataFrame(results_ocsvm)
     store_best_scores('one class svm', df_ocsvm)
@@ -84,7 +84,7 @@ def calling_algoritmos(sil, pcaComponents,
     # print("data2ensemble_actual:\n", data2ensemble_actual)
     print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # Rede Neural com PCA
+    # Ensemble
     # results_ensemble = ensemble(data2ensemble_pred, data2ensemble_actual)
     results_ensemble = ensemble(sil, data2ensemble_pred, o3test.flatten(), bot)
     print("\nEnsemble")
@@ -122,18 +122,18 @@ def calling_algoritmos(sil, pcaComponents,
     ax.set_xticks(ind)
     ax.set_xticklabels(algoritmos, rotation=40, ha="right")
     # plt.ylim([0, 1])
-    plt.title("F1 Scores por Algoritmo")
+    plt.title(f"({bot}) Metrics about all methods")
     plt.legend()
     plt.tight_layout()
     plt.show()
 
     silence = 'Silence' if sil else 'No Silence'   
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})Ensemble.png"
+        namePlot = f"ResultadosPlotSmart/({silence})EnsembleGraphBars.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
+        namePlot = f"ResultadosPlotSequential/({silence})EnsembleGraphBars.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
 
@@ -354,9 +354,9 @@ def main():
     sil = False
   
     
-    calling_algoritmos(sil, pcaComponents,
-                trainFeatures_browsing, testFeatures_browsing, i2train, i2test, o2train, o2test, 
-                trainFeatures_attack,   testFeatures_atck,     i3train, i3test, o3train, o3test)
+    # calling_algoritmos(sil, pcaComponents,
+    #             trainFeatures_browsing, testFeatures_browsing, i2train, i2test, o2train, o2test, 
+    #             trainFeatures_attack,   testFeatures_atck,     i3train, i3test, o3train, o3test)
     
     #######################################################################
     #######################################################################
@@ -440,13 +440,16 @@ def main():
     oClass_atck_s= np.ones((len(non_empty_lines_atck_s),1))*1
     # print("oClass_brsg_sum---------->\n",oClass_atck)
 
-
+    
 
     ##########################JOIN FEATURES ATCK& BRSG###########################
     #############################################################################
     combined_content_arr_brsg_s = convert_to_array(combined_content_str_brsg_s)
     combined_content_arr_atck_s = convert_to_array(combined_content_str_atck_s)
     
+    combined_content_arr_brsg_s = np.hstack((combined_content_arr_brsg, combined_content_arr_brsg_s))
+    combined_content_arr_atck_s = np.hstack((combined_content_arr_atck, combined_content_arr_atck_s))
+
     features_s = np.vstack((combined_content_arr_brsg_s, combined_content_arr_atck_s))
     oClass_s = np.vstack(( oClass_brsg_s, oClass_atck_s))
 
@@ -478,7 +481,7 @@ def main():
     o3test = np.vstack((oClass_brsg_s[pB:], oClass_atck_s[pA:]))
 
     print("\n#########silence#########")
-    pcaComponents_s = [1, 5, 10, 15, 20]
+    pcaComponents_s = [1, 5, 7, 17] # Checked until 51 and best pca component is 7 and 17 
     sil = True
 
     calling_algoritmos(sil, pcaComponents_s,
