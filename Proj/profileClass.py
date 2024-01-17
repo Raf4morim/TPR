@@ -20,10 +20,11 @@ import warnings
 from algoritmos import *
 warnings.filterwarnings('ignore')
 
-botFile = "Features_4smart1h30/4smart1h30"
-humanFile = "Features_5brsg1h30/5brsg1h30"
-bot = 'Smart Bot'
+# botFile = "Features_4seq1h30/4seq1h30"
 # bot = 'Sequential Bot'
+botFile = "Features_4smart1h30/4smart1h30"
+bot = 'Smart Bot'
+humanFile = "Features_5brsg1h30/5brsg1h30"
 ######################################################################################
 #                                      PROFILE                                       #
 ######################################################################################
@@ -126,14 +127,15 @@ def calling_algoritmos(sil, pcaComponents,
     plt.tight_layout()
     plt.show()
 
-
-
-
-
-
-    
-    
-
+    silence = 'Silence' if sil else 'No Silence'   
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})Ensemble.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
 
 def viewerAllPlotsMixed(features, features_s, oClass, bot):
     fIdxName = [
@@ -358,9 +360,7 @@ def main():
     
     #######################################################################
     #######################################################################
-    #######################################################################
     #                               SILENCE                               #
-    #######################################################################
     #######################################################################
     #######################################################################
 
@@ -478,12 +478,12 @@ def main():
     o3test = np.vstack((oClass_brsg_s[pB:], oClass_atck_s[pA:]))
 
     print("\n#########silence#########")
-    # pcaComponents_s = [1, 5, 10, 15, 20]
-    # sil = True
+    pcaComponents_s = [1, 5, 10, 15, 20]
+    sil = True
 
-    # calling_algoritmos(sil, pcaComponents,
-    #             trainFeatures_browsing, testFeatures_browsing, i2train, i2test, o2train, o2test, 
-    #             trainFeatures_attack,   testFeatures_atck,     i3train, i3test, o3train, o3test)
+    calling_algoritmos(sil, pcaComponents_s,
+                trainFeatures_browsing, testFeatures_browsing, i2train, i2test, o2train, o2test, 
+                trainFeatures_attack,   testFeatures_atck,     i3train, i3test, o3train, o3test)
     
     waitforEnter(fstop=True)
 

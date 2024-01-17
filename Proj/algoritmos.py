@@ -12,6 +12,7 @@ from sklearn import svm
 import seaborn as sns
 import sys
 import pandas as pd
+import os
 
 # def getMatchPredict(actual_labels, predicted_labels):
     # tp = sum(1 for actual, predicted in zip(actual_labels, predicted_labels) if actual == predicted == 1) # A previsão foi de que um evento ocorreria e ele realmente aconteceu.
@@ -115,25 +116,35 @@ def centroids_distances(sil, i2train, o2train, i3test, o3test, bot):
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f"({silence}) Best Confusion Matrix (Centroid-Based, Threshold: {best_result['Threshold']})")
-    plt.show()
+    # plt.show()
+   
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestCentroidsWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestCentroidsWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+
     return results
 
-def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass, testFeatures_normal, testFeatures_dns, o3testClass, bot):
+def centroids_distances_pca(sil, components_to_test, trainFeatures_browsing, o2train, testFeatures_browsing, testFeatures_atck, o3test, bot):
     print("----------------centroids_distances_pca----------------")
     silence = 'Silence' if sil else 'No Silence'
     results = {'Components': [],'Threshold': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
 
     for n_components in components_to_test:
         scaler = StandardScaler()
-        scaled_train = scaler.fit_transform(trainFeatures)
-        scaled_test = scaler.transform(np.vstack((testFeatures_normal, testFeatures_dns)))
+        scaled_train = scaler.fit_transform(trainFeatures_browsing)
+        scaled_test = scaler.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
 
         pca = PCA(n_components=n_components)
         i2train_pca = pca.fit_transform(np.vstack(scaled_train))
-        centroids = np.mean(i2train_pca[(o2trainClass == 0).flatten(), :], axis=0)
+        centroids = np.mean(i2train_pca[(o2train == 0).flatten(), :], axis=0)
 
         i3Atest_pca = pca.transform(scaled_test)
-        actual_labels = o3testClass.flatten()
+        actual_labels = o3test.flatten()
 
         threshold_values = [0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 1.2, 1.1, 1.5, 2.0, 3, 5, 6, 10]
 
@@ -141,7 +152,6 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
             distances = np.linalg.norm(i3Atest_pca - centroids, axis=1)
             predicted_labels = (distances > threshold).astype(float) * 1.0  # Anomalies are labeled as 1.0
             results = resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=n_components, threshold=threshold, kernel=None)
-
 
     df = pd.DataFrame(results)
     best_result = df.loc[df['F1 Score'].idxmax()]
@@ -152,7 +162,16 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures, o2trainClass
     plt.title(f"({silence}) Best on PCA Centroid-Based is Components: {best_result['Components']}, Threshold: {best_result['Threshold']})")
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.show()
+    # plt.show()
+    
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestCentroidsWith{best_result['Components']}PCAComponentes.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestCentroidsWith{best_result['Components']}PCAComponentes.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
     return results
 
 def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, i2train, i3test, o3test, bot):
@@ -202,7 +221,16 @@ def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, i2train, i3test, o3tes
     plt.xlabel('Predicted label')
     plt.ylabel('Real label')
     plt.title(f'({silence}) Best Confusion Matrix OC SVM - {df.loc[best_f1_index, "Kernel"].capitalize()} Kernel')
-    plt.show()
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestOCSVMWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestOCSVMWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
 
     return results, data2ensemble_pred, data2ensemble_actual
 
@@ -251,8 +279,16 @@ def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components
     sns.heatmap(best_confusion_matrix,annot=True, cmap='Blues', fmt='d', xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted label')
     plt.ylabel('Real label')
-    plt.title(f'({silence}) Best Confusion Matrix OC SVM PCA- {df.loc[best_f1_index, "Kernel"].capitalize()} Kernel\nWith {best_components} PCA Components')
-    plt.show()
+    plt.title(f'({silence}) Best Confusion Matrix OC SVM - {df.loc[best_f1_index, "Kernel"].capitalize()} Kernel\nWith {best_components} PCA Components')
+    # plt.show()
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestOCSVMWith{best_components}PCAComponents.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestOCSVMWith{best_components}PCAComponents.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
     # print(" data2ensemble:\n",  data2ensemble)
     return results, data2ensemble_pred, data2ensemble_actual
 
@@ -285,12 +321,22 @@ def nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatur
     best_result = df.loc[best_f1_score]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(8, 6))
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best on Neural Networks without PCA')
-    plt.show()
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestNeuralNetworksWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestNeuralNetworksWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    
     return results, data2ensemble_pred, data2ensemble_actual
 
 def nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
@@ -325,12 +371,21 @@ def nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComp
     best_components = df.loc[best_f1_score, 'Components']
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(8, 6))
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best Confusion Matrix: Neural Networks with {best_components} PCA Components')
-    plt.show()
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestNeuralNetworkswith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestNeuralNetworkswith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
     return results, data2ensemble_pred, data2ensemble_actual
 
 def ensemble(sil, all_data2ensemble_pred, o3test, bot):
@@ -360,10 +415,10 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
 
             # anomalia prevista e é normal
             if int(final_pred.count(0)) >= maioria_pred and actual==0:
-                results['FN']+=1
+                results['TN']+=1
             # normal previsto e é normal
             if int(final_pred.count(1)) > maioria_pred and actual==0:
-                results['TN']+=1
+                results['FN']+=1
             # anomalia prevista e ataque
             if int(final_pred.count(1)) >= maioria_pred and actual==1:
                 results['TP']+=1
@@ -393,11 +448,20 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
     best_result = df.loc[best_f1_score]
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(8, 6))
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='d',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
     plt.title(f'({silence}) Best Confusion Matrix Ensemble')
-    plt.show()
+    # plt.show()
+
+    # if bot == 'Smart Bot':
+    #     namePlot = f"ResultadosPlotSmart/({silence})Ensemble.png"
+    #     os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+    #     plt.savefig(namePlot)
+    # elif bot == 'Sequential Bot':
+    #     namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
+    #     os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+    #     plt.savefig(namePlot)
 
     return final_result
