@@ -19,7 +19,7 @@ To execute these scripts, you need to create a virtual environment and install t
 
 ```bash
 python -m venv venv
-.\whatsapp-venv\Scripts\activate
+.\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 

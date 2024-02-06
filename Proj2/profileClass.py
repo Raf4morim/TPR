@@ -17,6 +17,7 @@ from sklearn.metrics import accuracy_score, precision_score, confusion_matrix
 import sys
 import warnings
 
+
 from algoritmos import *
 warnings.filterwarnings('ignore')
 
@@ -48,41 +49,96 @@ def calling_algoritmos(sil, pcaComponents,
             'FP': best_row['FP'],
             'TN': best_row['TN'],
             'FN': best_row['FN'],
-            'F1 Score': best_row['F1 Score']
+            'F1 Score': round(best_row['F1 Score'], 2)
         }
 
     data2ensemble_pred=[]
-    data2ensemble_actual=[]
     # Processamento e armazenamento dos melhores scores para cada algoritmo
     # One Class SVM
-    results_ocsvm, data2ensemble_pred, data2ensemble_actual = oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
+    results_ocsvm, data2ensemble_pred = oc_svm(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
     print("\none class svm")
     df_ocsvm = pd.DataFrame(results_ocsvm)
     store_best_scores('one class svm', df_ocsvm)
     print("1len(data2ensemble_pred): ", len(data2ensemble_pred))
 
     # One Class SVM com PCA
-    results_ocsvm_pca, data2ensemble_pred, data2ensemble_actual = oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
+    results_ocsvm_pca, data2ensemble_pred = oc_svm_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
     print("\none class svm pca")
     df_ocsvm_pca = pd.DataFrame(results_ocsvm_pca)
     store_best_scores('one class svm pca', df_ocsvm_pca)
     print("2len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # Rede Neural
-    results_nn, data2ensemble_pred, data2ensemble_actual = nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
-    print("\nneural network")
-    df_nn = pd.DataFrame(results_nn)
-    store_best_scores('neural network', df_nn)
+    # LOF
+    results_lof, data2ensemble_pred = local_outlier_factor(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    print("\nLOF")
+    df_lof = pd.DataFrame(results_lof)
+    store_best_scores('LOF', df_lof)
     print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # Rede Neural com PCA
-    results_nn_pca, data2ensemble_pred, data2ensemble_actual = nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
-    print("\nneural network pca")
-    df_nn_pca = pd.DataFrame(results_nn_pca)
-    store_best_scores('neural network pca', df_nn_pca)
+    # LOF com PCA
+    results_lof_pca, data2ensemble_pred = local_outlier_factor_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\nLOF pca")
+    df_lof_pca = pd.DataFrame(results_lof_pca)
+    store_best_scores('LOF pca', df_lof_pca)
     # print("data2ensemble_pred:\n", data2ensemble_pred)
     # print("data2ensemble_actual:\n", data2ensemble_actual)
     print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+    
+    # GM
+    results_GM, data2ensemble_pred = gaussianMix(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    print("\ngaussianMix")
+    df_GM = pd.DataFrame(results_GM)
+    store_best_scores('gaussianMix', df_GM)
+    print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # GM com PCA
+    results_GM_pca, data2ensemble_pred = gaussianMix_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\ngaussianMix_pca")
+    df_GM_pca = pd.DataFrame(results_GM_pca)
+    store_best_scores('gaussianMix_pca', df_GM_pca)
+    print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+    
+    # # RC
+    # results_RC, data2ensemble_pred = robust_covariance(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    # print("\nrobust_covariance")
+    # df_RC = pd.DataFrame(results_RC)
+    # store_best_scores('robust_covariance', df_RC)
+    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # RC com PCA
+    # results_RC_pca, data2ensemble_pred = robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    # print("\nrobust_covariance pca")
+    # df_RC_pca = pd.DataFrame(results_RC_pca)
+    # store_best_scores('robust_covariance pca', df_RC_pca)
+    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # EE
+    # results_ee, data2ensemble_pred = ee(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    # print("\nEllipticEnvelope")
+    # df_ee = pd.DataFrame(results_ee)
+    # store_best_scores('EllipticEnvelope', df_ee)
+    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # EE com PCA
+    # results_ee_pca, data2ensemble_pred = ee_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    # print("\nEllipticEnvelope pca")
+    # df_ee_pca = pd.DataFrame(results_ee_pca)
+    # store_best_scores('EllipticEnvelope pca', df_ee_pca)
+    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # IF
+    # results_if, data2ensemble_pred = iforest(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    # print("\nIsolationForest")
+    # df_if = pd.DataFrame(results_if)
+    # store_best_scores('IsolationForest', df_if)
+    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+
+    # # IF com PCA
+    # results_if_pca, data2ensemble_pred = iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    # print("\nIsolationForest pca")
+    # df_if_pca = pd.DataFrame(results_if_pca)
+    # store_best_scores('IsolationForest pca', df_if_pca)
+    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
 
     # Ensemble
     # results_ensemble = ensemble(data2ensemble_pred, data2ensemble_actual)
@@ -90,14 +146,11 @@ def calling_algoritmos(sil, pcaComponents,
     print("\nEnsemble")
     df_ensemble = pd.DataFrame(results_ensemble)
     store_best_scores('Ensemble', df_ensemble)
-    # print("data2ensemble_pred:\n", data2ensemble_pred)
-    # print("data2ensemble_actual:\n", data2ensemble_actual)
-    # print("5len(data2ensemble_pred): ", len(data2ensemble_pred))
 
     # # Exibindo os melhores scores
     print("\nMelhores F1 Scores por Algoritmo:")
     for alg, scores in bestF1Scores.items():
-        print(f"{alg}: \t\t{scores}")
+        print(f"{alg:14s}: {scores}")
         
     algoritmos = list(bestF1Scores.keys())
 
@@ -477,7 +530,7 @@ def main():
     o3test = np.vstack((oClass_brsg_s[pB:], oClass_atck_s[pA:]))
 
     print("\n#########silence#########")
-    pcaComponents_s = [1, 5, 7, 17] # Checked until 51 and best pca component is 7 and 17 
+    pcaComponents_s = [1,2,3,4, 5, 7, 17] # Checked until 51 and best pca component is 7 and 17 
     sil = True
 
     calling_algoritmos(sil, pcaComponents_s,

@@ -2,14 +2,24 @@ import numpy as np
 from os.path import exists
 import matplotlib.pyplot as plt
 from sklearn.discriminant_analysis import StandardScaler
+from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MaxAbsScaler
 from sklearn.decomposition import PCA
 from scipy.stats import multivariate_normal
 from sklearn.metrics import confusion_matrix
 from sklearn.neural_network import MLPClassifier
+from sklearn.decomposition import PCA
+from sklearn.covariance import EllipticEnvelope
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.mixture import GaussianMixture
+
 from sklearn import svm
 import seaborn as sns
+from sklearn.metrics import f1_score
 import sys
 import pandas as pd
 import os
@@ -24,10 +34,10 @@ import os
 def printMetrics(tp, tn, fp, fn, accuracy, precision, recall, f1_score):
     print(f'\nTrue Positives: {tp}, False Negatives: {fn}')
     print(f'False Positives: {fp}, True Negatives: {tn}')
-    print(f'Accuracy: {accuracy}')
-    print(f'Precision: {precision}')
-    print(f'Recall: {recall}')
-    print(f'F1-Score: {f1_score}\n')
+    print(f'Accuracy: {accuracy:.2f}')
+    print(f'Precision: {precision:.2f}')
+    print(f'Recall: {recall:.2f}')
+    print(f'F1-Score: {f1_score:.2f}\n')
 
 def calculate_metrics(tp, tn, fp, fn):
     accuracy = (tp + tn) / (tp + tn + fp + fn) * 100
@@ -37,11 +47,7 @@ def calculate_metrics(tp, tn, fp, fn):
     return accuracy, precision, recall, f1_score
 
 def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_components=None, threshold=None, kernel=None):
-    # print("actual_labels: ", actual_labels)
-    # print("predicted_labels: ", predicted_labels)
-    
     tn, fp, fn, tp = confusion_matrix(actual_labels, predicted_labels).ravel()
-    # print("CM ULALALAALALALALALA: ",CM)
     accuracy, precision, recall, f1_score = calculate_metrics(tp, tn, fp, fn)
 
     if kernel is not None:
@@ -65,15 +71,8 @@ def resultsConfusionMatrix(actual_labels, predicted_labels, results, n_component
     normalized_fn = fn / total
     normalized_tp = tp / total
     results['ConfusionMatrix'].append((normalized_tp, normalized_fn, normalized_fp, normalized_tn))
-
-    # print("\nresults['TP']:\n", results['TP'])
-    # print("results['FP']:\n", results['FP'])
-    # print("results['TN']:\n", results['TN'])
-    # print("results['FN']:\n", results['FN'])
-    # print("results['ConfusionMatrix']:\n\n", results['ConfusionMatrix'])
-    # print("\nAAAAAAAAAAAAH\n",results)
-
     return results
+
 def distance(c,p):
     s=0
     n=0
@@ -81,8 +80,8 @@ def distance(c,p):
         if c[i]>0:
             s+=np.square((p[i]-c[i])/c[i])
             n+=1
-    
     return(np.sqrt(s/n))
+
 def centroids_distances(sil, i2train, o2train, i3test, o3test, bot):
     print("----------------centroids_distances----------------")
     silence = 'Silence' if sil else 'No Silence'
@@ -180,12 +179,11 @@ def centroids_distances_pca(sil, components_to_test, trainFeatures_browsing, o2t
         plt.savefig(namePlot)
     return results
 
-def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
+def oc_svm(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
     print("----------------oc_svm----------------")
     silence = 'Silence' if sil else 'No Silence'
     results = {'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
     
-    # scaler = MaxAbsScaler()
     i2train = trainFeatures_browsing
     i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
 
@@ -197,18 +195,13 @@ def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing
         # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
         predictions = np.where(predictions == -1, 0, 1)
         data2ensemble_pred.append(predictions.tolist())
-        data2ensemble_actual.append(o3test.flatten().tolist())
 
-        # Use the resultsConfusionMatrix function to calculate and store results
-        # print("kernel: ", kernel)
         results = resultsConfusionMatrix(o3test.flatten(), predictions, results, kernel=kernel)
 
-    # print("AAAAAAAAAAAAAAAH",len(data2ensemble_actual[0]))
     # Find the index of the row with the best F1 score
     df = pd.DataFrame(results)
     best_f1_index = df['F1 Score'].idxmax()
 
-    # print("data2ensemble: \n", data2ensemble)
     # Print the best results
     best_result = df.iloc[best_f1_index]
     printMetrics(best_result['TP'], best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
@@ -231,9 +224,9 @@ def oc_svm(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
 
-    return results, data2ensemble_pred, data2ensemble_actual
+    return results, data2ensemble_pred
 
-def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
+def oc_svm_pca(data2ensemble_pred, sil, max_pca_components, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot):
     print("----------------oc_svm_pca----------------")
     silence = 'Silence' if sil else 'No Silence'
     results = {'Components': [], 'Kernel': [], 'TP': [], 'FP': [], 'TN': [], 'FN': [], 'Accuracy': [], 'Precision': [], 'Recall': [], 'F1 Score': [], 'ConfusionMatrix': []}
@@ -254,8 +247,6 @@ def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components
             # Convert predictions from -1 (anomaly) and 1 (normal) to 0 (anomaly) and 1 (normal)
             predictions = np.where(predictions == -1, 0, 1)
             data2ensemble_pred.append(predictions.tolist())
-            data2ensemble_actual.append(o3test.flatten().tolist())
-
             # Use the resultsConfusionMatrix function to calculate and store results
             # print("kernel: ", kernel)
             results = resultsConfusionMatrix(o3test.flatten(), predictions, results, kernel=kernel, n_components=n_components)
@@ -287,28 +278,22 @@ def oc_svm_pca(data2ensemble_pred, data2ensemble_actual, sil, max_pca_components
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     # print(" data2ensemble:\n",  data2ensemble)
-    return results, data2ensemble_pred, data2ensemble_actual
+    return results, data2ensemble_pred
 
-def nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
-    print("----------------nn_classification----------------")
+def local_outlier_factor(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot):
+    print("----------------local outlier factor----------------")
     silence = 'Silence' if sil else 'No Silence'    
-    # Prepare the training and testing data
-    i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
-    i3test = np.vstack((testFeatures_browsing, testFeatures_atck))
 
-    scaler = MaxAbsScaler().fit(i3train)
-    i3train = scaler.transform(i3train)
-    i3test = scaler.transform(i3test)
+    scaled_train_features = trainFeatures_browsing
+    scaled_test_features = np.vstack((testFeatures_browsing, testFeatures_atck))
 
-    # Initialize and train the neural network classifier
-    alpha = 1
-    max_iter = 100000
-    clf = MLPClassifier(solver='lbfgs', alpha=alpha, hidden_layer_sizes=(20,), max_iter=max_iter)
-    clf.fit(i3train, o3train)
-    predictions = clf.predict(i3test)
-    # print(predictions)
+    # Adjust LOF parameters
+    lof = LocalOutlierFactor(n_neighbors=15, contamination=0.2, novelty=True)
+    lof.fit(scaled_train_features)
+    predictions = lof.predict(scaled_test_features)
+    predictions = np.where(predictions == -1, 0, 1)  # Convert predictions
+
     data2ensemble_pred.append(predictions.tolist()) #
-    data2ensemble_actual.append(o3test.flatten().tolist()) #
     # Initialize results dictionary
     results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
     results = resultsConfusionMatrix(o3test, predictions, results, n_components=None, threshold=None, kernel=None)
@@ -321,44 +306,39 @@ def nn_classification(data2ensemble_pred, data2ensemble_actual, sil, trainFeatur
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.title(f'({silence}) Best on Neural Networks without PCA')
+    plt.title(f'({silence}) Best on LOF without PCA')
     # plt.show()
 
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})BestNeuralNetworksWithoutPCA.png"
+        namePlot = f"ResultadosPlotSmart/({silence})BestLOFWithoutPCA.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})BestNeuralNetworksWithoutPCA.png"
+        namePlot = f"ResultadosPlotSequential/({silence})BestLOFWithoutPCA.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     
-    return results, data2ensemble_pred, data2ensemble_actual
+    return results, data2ensemble_pred
 
-def nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
-    print("----------------nn_classification_pca----------------")
+def local_outlier_factor_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
+    print("----------------local_outlier_pca----------------")
     silence = 'Silence' if sil else 'No Silence'   
     results = {'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
 
-    i3train = np.vstack((trainFeatures_browsing, trainFeatures_attack))
+    i2train = np.vstack((trainFeatures_browsing))
     i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
 
     for n_components in pcaComponents:
         pca = PCA(n_components=n_components)
-        i3train_pca = pca.fit_transform(i3train)
+        i2train_pca = pca.fit_transform(i2train)
         i3Ctest_pca = pca.transform(i3Ctest)
 
-        scaler = MaxAbsScaler().fit(i3train_pca)
-        i3trainN_pca = scaler.transform(i3train_pca)
-        i3CtestN_pca = scaler.transform(i3Ctest_pca)
+        lof = LocalOutlierFactor(n_neighbors=15, contamination=0.2)
+        lof.fit(i2train_pca)
+        predictions = lof.fit_predict(i3Ctest_pca)
+        predictions = np.where(predictions == -1, 0, 1)
 
-        alpha = 1
-        max_iter = 100000
-        clf = MLPClassifier(solver='lbfgs', alpha=alpha, hidden_layer_sizes=(20,), max_iter=max_iter)
-        clf.fit(i3trainN_pca, o3train)
-        predictions = clf.predict(i3CtestN_pca)
         data2ensemble_pred.append(predictions.tolist()) #
-        data2ensemble_actual.append(o3test.flatten().tolist()) #
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
         # print(results)
     df = pd.DataFrame(results)
@@ -371,18 +351,397 @@ def nn_classification_pca(data2ensemble_pred, data2ensemble_actual, sil, pcaComp
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.title(f'({silence}) Best Confusion Matrix: Neural Networks with {best_components} PCA Components')
+    plt.title(f'({silence}) Best Confusion Matrix: LOF with {best_components} PCA Components')
     # plt.show()
 
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})BestNeuralNetworkswith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSmart/({silence})BestLOFwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})BestNeuralNetworkswith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSequential/({silence})BestLOFwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
-    return results, data2ensemble_pred, data2ensemble_actual
+    return results, data2ensemble_pred
+
+def robust_covariance(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot):
+    print("----------------robust covariance----------------")
+    silence = 'Silence' if sil else 'No Silence'    
+
+    scaled_train_features = trainFeatures_browsing
+    scaled_test_features = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    # Adjust EllipticEnvelope parameters
+    robust_cov = EllipticEnvelope(contamination=0.2)
+    robust_cov.fit(scaled_train_features)
+    predictions = robust_cov.predict(scaled_test_features)
+    predictions = np.where(predictions == -1, 0, 1)  # Convert predictions
+
+    data2ensemble_pred.append(predictions.tolist()) #
+    # Initialize results dictionary
+    results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+    results = resultsConfusionMatrix(o3test, predictions, results, n_components=None, threshold=None, kernel=None)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best on robust covariance without PCA')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestRCWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestRCWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    
+    return results, data2ensemble_pred
+
+def robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
+    print("----------------robust covariance_pca----------------")
+    silence = 'Silence' if sil else 'No Silence'   
+    results = {'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+
+    i2train = np.vstack((trainFeatures_browsing))
+    i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    for n_components in pcaComponents:
+        pca = PCA(n_components=n_components)
+        i2train_pca = pca.fit_transform(i2train)
+        i3Ctest_pca = pca.transform(i3Ctest)
+
+        robust_cov = EllipticEnvelope(contamination=0.2)
+        robust_cov.fit(i2train_pca)
+        predictions = robust_cov.predict(i3Ctest_pca)
+        predictions = np.where(predictions == -1, 0, 1)
+
+        data2ensemble_pred.append(predictions.tolist()) #
+        results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
+        # print(results)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    best_components = df.loc[best_f1_score, 'Components']
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best Confusion Matrix: robust covariance with {best_components} PCA Components')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestRCwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestRCwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    return results, data2ensemble_pred
+
+def gaussianMix(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot):
+    print("----------------gaussianMix----------------")
+    silence = 'Silence' if sil else 'No Silence'    
+
+    # Scale features
+    scaler = StandardScaler()
+    train_features = scaler.fit_transform(np.vstack((trainFeatures_browsing)))
+    test_features = scaler.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
+
+    # Use BIC to select the number of components
+    lowest_bic = np.infty
+    bic = []
+    n_components_range = range(1, 11)  # You can adjust this range
+    cv_types = ['spherical', 'tied', 'diag', 'full']
+    best_gmm_params = {}
+    for cv_type in cv_types:
+        for n_components in n_components_range:
+            gmm = GaussianMixture(n_components=n_components, covariance_type=cv_type, reg_covar=1e-4, random_state=0)
+            gmm.fit(train_features)
+            bic_score = gmm.bic(train_features)
+            bic.append(bic_score)
+            if bic_score < lowest_bic:
+                lowest_bic = bic_score
+                best_gmm_params = {'n_components': n_components, 'covariance_type': cv_type, 'bic_score': bic_score}
+
+    # Fit the best model
+    best_gmm = GaussianMixture(n_components=best_gmm_params['n_components'], covariance_type=best_gmm_params['covariance_type'], reg_covar=1e-4, random_state=0)
+    best_gmm.fit(train_features)
+
+    # Predict using the best model
+    log_likelihood = best_gmm.score_samples(test_features)
+    threshold = np.percentile(log_likelihood, 5)  # Adjusted threshold selection method
+    predictions = log_likelihood < threshold
+    predictions = np.where(predictions, 0, 1)
+    
+    # print ("predictions -----> ", predictions)
+    data2ensemble_pred.append(predictions.tolist()) #
+
+    # Initialize results dictionary
+    results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+    results = resultsConfusionMatrix(o3test, predictions, results, n_components=None, threshold=None, kernel=None)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best on robust covariance without PCA')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestRCWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestRCWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    
+    return results, data2ensemble_pred
+
+def gaussianMix_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
+    print("----------------gaussianMix_pca----------------")
+    silence = 'Silence' if sil else 'No Silence'   
+    results = {'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+
+    scaler = StandardScaler()
+    # Scale features before applying PCA
+    train_features_scaled = scaler.fit_transform(np.vstack((trainFeatures_browsing)))
+    test_features_scaled = scaler.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
+
+    for n_components in pcaComponents:
+        pca = PCA(n_components=n_components)
+        train_features_pca = pca.fit_transform(train_features_scaled)
+        test_features_pca = pca.transform(test_features_scaled)
+
+        # Use BIC to select the number of components for GMM after applying PCA
+        lowest_bic = np.infty
+        bic = []
+        n_components_range = range(1, 7)
+        cv_types = ['spherical', 'tied', 'diag', 'full']
+        for cv_type in cv_types:
+            for n_components_gmm in n_components_range:
+                gmm = GaussianMixture(n_components=n_components_gmm, covariance_type=cv_type, reg_covar=1e-4, random_state=0)
+                gmm.fit(train_features_pca)
+                bic.append(gmm.bic(train_features_pca))
+                if bic[-1] < lowest_bic:
+                    lowest_bic = bic[-1]
+                    best_gmm = gmm
+
+        # Fit the best GMM model
+        gmm = best_gmm.fit(train_features_pca)
+
+        # Predict using the best GMM model
+        log_likelihood = gmm.score_samples(test_features_pca)
+        threshold = np.percentile(log_likelihood, 5)  # Using the 5th percentile as threshold
+        predictions = log_likelihood < threshold
+        predictions = np.where(predictions, 0, 1)
+
+        data2ensemble_pred.append(predictions.tolist()) #
+        results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
+        # print(results)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    best_components = df.loc[best_f1_score, 'Components']
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best Confusion Matrix: robust covariance with {best_components} PCA Components')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestRCwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestRCwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    return results, data2ensemble_pred
+
+def ee(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot):
+    print("----------------EllipticEnvelope----------------")
+    silence = 'Silence' if sil else 'No Silence'    
+    train_features = trainFeatures_browsing
+    test_features = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    # Train Elliptic Envelope model
+    ee = EllipticEnvelope(contamination=0.1)
+    ee.fit(train_features)
+    predictions = ee.predict(test_features)
+    predictions = np.where(predictions == -1, 0, 1)  # Outliers are labeled as 0
+
+    data2ensemble_pred.append(predictions.tolist()) #
+    # Initialize results dictionary
+    results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+    results = resultsConfusionMatrix(o3test, predictions, results, n_components=None, threshold=None, kernel=None)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best on EllipticEnvelope without PCA')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestEEWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestEEWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    
+    return results, data2ensemble_pred
+
+def ee_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
+    print("----------------EllipticEnvelope----------------")
+    silence = 'Silence' if sil else 'No Silence'   
+    results = {'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+
+    i2train = np.vstack((trainFeatures_browsing))
+    i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    for n_components in pcaComponents:
+        pca = PCA(n_components=n_components)
+        i2train_pca = pca.fit_transform(i2train)
+        i3Ctest_pca = pca.transform(i3Ctest)
+
+        # Use EllipticEnvelope for outlier detection on the PCA-transformed data
+        ee = EllipticEnvelope(support_fraction=0.994, contamination=0.1)
+        ee.fit(i2train_pca)  # Fit the model to the browsing data only
+        predictions = ee.predict(i3Ctest_pca)
+        # In EllipticEnvelope, -1 is an outlier and 1 is inlier
+        predictions = np.where(predictions == -1, 0, 1)
+
+        data2ensemble_pred.append(predictions.tolist()) #
+        results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
+        # print(results)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    best_components = df.loc[best_f1_score, 'Components']
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best Confusion Matrix: EllipticEnvelope with {best_components} PCA Components')
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestEEwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestEEwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    return results, data2ensemble_pred
+
+def iforest(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot):
+    print("----------------Isolation Foreste----------------")
+    silence = 'Silence' if sil else 'No Silence'    
+    train_features = trainFeatures_browsing
+    test_features = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    # Train Isolation Forest model
+    iforest = IsolationForest(contamination=0.1)
+    iforest.fit(train_features)
+    predictions = iforest.predict(test_features)
+    predictions = np.where(predictions == -1, 0, 1)  # Outliers are labeled as 0
+
+    data2ensemble_pred.append(predictions.tolist()) #
+    # Initialize results dictionary
+    results = {'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+    results = resultsConfusionMatrix(o3test, predictions, results, n_components=None, threshold=None, kernel=None)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best on Isolation Forest without PCA')
+    # plt.show()
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestIFWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestIFWithoutPCA.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    
+    return results, data2ensemble_pred
+
+def iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot):
+    print("----------------Isolation Foreste----------------")
+    silence = 'Silence' if sil else 'No Silence'   
+    results = {'Components': [],'TP': [],'FP': [],'TN': [],'FN': [],'Accuracy': [],'Precision': [],'Recall': [],'F1 Score': [],'ConfusionMatrix': []}
+
+    i2train = np.vstack((trainFeatures_browsing))
+    i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
+
+    for n_components in pcaComponents:
+        pca = PCA(n_components=n_components)
+        i2train_pca = pca.fit_transform(i2train)
+        i3Ctest_pca = pca.transform(i3Ctest)
+
+        # Use Isolation Forest for outlier detection on the PCA-transformed data
+        iforest = IsolationForest(contamination=0.1)
+        iforest.fit(i2train_pca)  # Fit the model to the browsing data only
+        predictions = iforest.predict(i3Ctest_pca)
+        predictions = np.where(predictions == -1, 0, 1)
+
+        data2ensemble_pred.append(predictions.tolist()) #
+        results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
+        # print(results)
+    df = pd.DataFrame(results)
+    best_f1_score = df['F1 Score'].idxmax()
+    best_result = df.loc[best_f1_score]
+    best_components = df.loc[best_f1_score, 'Components']
+    printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
+    cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
+    plt.xlabel('Predicted')
+    plt.ylabel('Real')
+    plt.title(f'({silence}) Best Confusion Matrix: EllipticEnvelope with {best_components} PCA Components')
+
+    if bot == 'Smart Bot':
+        namePlot = f"ResultadosPlotSmart/({silence})BestEEwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    elif bot == 'Sequential Bot':
+        namePlot = f"ResultadosPlotSequential/({silence})BestEEwith{best_components}PCA Components.png"
+        os.makedirs(os.path.dirname(namePlot), exist_ok=True)
+        plt.savefig(namePlot)
+    return results, data2ensemble_pred
 
 def ensemble(sil, all_data2ensemble_pred, o3test, bot):
     print("----------------ensemble----------------")
@@ -396,18 +755,15 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
     if all_data2ensemble_pred and isinstance(all_data2ensemble_pred[0], list):
         for i in range(len(all_data2ensemble_pred[0])):
             final_pred = [sublist[i] for sublist in all_data2ensemble_pred]
-
+            # print("aHHHHHHHHHHHHHHHHHHHHHHHHHHHH", final_pred)
             actual = int(o3test[i])
   
             # imaginando temos um array de 10 -> int(len(final_pred)/2) = 5
             # 0: browsing 1: anomalia
-            print("final_pred.count(1): ",final_pred.count(1))    
-            print("final_pred.count(0): ",final_pred.count(0))    
-            print("actual: ",actual)
+            # print("final_pred.count(1): ",final_pred.count(1))    
+            # print("final_pred.count(0): ",final_pred.count(0))    
+            # print("actual: ",actual)
             maioria_pred = int(len(final_pred)/2)
-            # maioria_actual = int(len(final_actual)/2)
-            print("maioria_pred", maioria_pred)
-            # print("maioria_actual", maioria_actual)
 
             # anomalia prevista e é normal
             if int(final_pred.count(0)) >= maioria_pred and actual==0:
@@ -421,7 +777,6 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
             # normal previsto e é ataque
             if int(final_pred.count(0)) > maioria_pred and actual==1:
                 results['FP']+=1
-        
     else:
         print("allData2Ensemble is empty or not formatted correctly.")
     tn=results['TN']
@@ -468,5 +823,4 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
         namePlot = f"ResultadosPlotSequential/({silence})Ensemble.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
-
     return final_result
