@@ -1,4 +1,4 @@
-## Organização dos ficheiros
+## File organization
 
 1. The 'wpp_sms' folder contains scripts that automatically generate messages, representing the attacker. There are two versions: a basic one and a more advanced one with higher complexity to mimic human behavior.
 
