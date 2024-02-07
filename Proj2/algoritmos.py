@@ -327,6 +327,7 @@ def local_outlier_factor_pca(data2ensemble_pred, sil, pcaComponents, trainFeatur
 
     i2train = np.vstack((trainFeatures_browsing))
     i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
+    predictions_dict = {}
 
     for n_components in pcaComponents:
         pca = PCA(n_components=n_components)
@@ -338,13 +339,20 @@ def local_outlier_factor_pca(data2ensemble_pred, sil, pcaComponents, trainFeatur
         predictions = lof.fit_predict(i3Ctest_pca)
         predictions = np.where(predictions == -1, 0, 1)
 
-        data2ensemble_pred.append(predictions.tolist()) #
+        predictions_dict[n_components] = predictions.tolist()
+
+        # data2ensemble_pred.append(predictions.tolist()) #
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
         # print(results)
     df = pd.DataFrame(results)
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
     best_components = df.loc[best_f1_score, 'Components']
+
+    best_Pred = predictions_dict[best_components]
+    data2ensemble_pred.append(best_Pred) #
+    print("------------------> ", best_Pred)
+
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 6))
@@ -412,6 +420,7 @@ def robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_
     i2train = np.vstack((trainFeatures_browsing))
     i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
 
+    predictions_dict = {}
     for n_components in pcaComponents:
         pca = PCA(n_components=n_components)
         i2train_pca = pca.fit_transform(i2train)
@@ -422,13 +431,20 @@ def robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_
         predictions = robust_cov.predict(i3Ctest_pca)
         predictions = np.where(predictions == -1, 0, 1)
 
-        data2ensemble_pred.append(predictions.tolist()) #
+        predictions_dict[n_components] = predictions.tolist()
+
+        # data2ensemble_pred.append(predictions.tolist()) #
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
         # print(results)
     df = pd.DataFrame(results)
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
     best_components = df.loc[best_f1_score, 'Components']
+
+    best_Pred = predictions_dict[best_components]
+    data2ensemble_pred.append(best_Pred) #
+    print("------------------> ", best_Pred)
+
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 6))
@@ -498,15 +514,15 @@ def gaussianMix(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_br
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.title(f'({silence}) Best on robust covariance without PCA')
+    plt.title(f'({silence}) Best on Gaussian Mixture without PCA')
     # plt.show()
 
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})BestRCWithoutPCA.png"
+        namePlot = f"ResultadosPlotSmart/({silence})BestGMWithoutPCA.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})BestRCWithoutPCA.png"
+        namePlot = f"ResultadosPlotSequential/({silence})BestGMWithoutPCA.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     
@@ -521,7 +537,7 @@ def gaussianMix_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsi
     # Scale features before applying PCA
     train_features_scaled = scaler.fit_transform(np.vstack((trainFeatures_browsing)))
     test_features_scaled = scaler.transform(np.vstack((testFeatures_browsing, testFeatures_atck)))
-
+    predictions_dict = {}
     for n_components in pcaComponents:
         pca = PCA(n_components=n_components)
         train_features_pca = pca.fit_transform(train_features_scaled)
@@ -550,28 +566,35 @@ def gaussianMix_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsi
         predictions = log_likelihood < threshold
         predictions = np.where(predictions, 0, 1)
 
-        data2ensemble_pred.append(predictions.tolist()) #
+        predictions_dict[n_components] = predictions.tolist()
+
+        # data2ensemble_pred.append(predictions.tolist()) #
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
         # print(results)
     df = pd.DataFrame(results)
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
     best_components = df.loc[best_f1_score, 'Components']
+    best_Pred = predictions_dict[best_components]
+    data2ensemble_pred.append(best_Pred) #
+    print("------------------> ", best_Pred)
+
+
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.title(f'({silence}) Best Confusion Matrix: robust covariance with {best_components} PCA Components')
+    plt.title(f'({silence}) Best Confusion Matrix: Gaussian Mixture with {best_components} PCA Components')
     # plt.show()
 
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})BestRCwith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSmart/({silence})BestGMwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})BestRCwith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSequential/({silence})BestGMwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     return results, data2ensemble_pred
@@ -707,6 +730,8 @@ def iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, 
     i2train = np.vstack((trainFeatures_browsing))
     i3Ctest = np.vstack((testFeatures_browsing, testFeatures_atck))
 
+    predictions_dict = {}
+
     for n_components in pcaComponents:
         pca = PCA(n_components=n_components)
         i2train_pca = pca.fit_transform(i2train)
@@ -718,27 +743,33 @@ def iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, 
         predictions = iforest.predict(i3Ctest_pca)
         predictions = np.where(predictions == -1, 0, 1)
 
-        data2ensemble_pred.append(predictions.tolist()) #
+        predictions_dict[n_components] = predictions.tolist()
+
+        # data2ensemble_pred.append(predictions.tolist()) #
         results = resultsConfusionMatrix(o3test, predictions, results, n_components=n_components, threshold=None, kernel=None)
         # print(results)
+        
     df = pd.DataFrame(results)
     best_f1_score = df['F1 Score'].idxmax()
     best_result = df.loc[best_f1_score]
     best_components = df.loc[best_f1_score, 'Components']
+    best_Pred = predictions_dict[best_components]
+    data2ensemble_pred.append(best_Pred) #
+    print("------------------> ", best_Pred)
     printMetrics(best_result['TP'],  best_result['TN'], best_result['FP'], best_result['FN'], best_result['Accuracy'], best_result['Precision'], best_result['Recall'], best_result['F1 Score'])
     cm_2x2 = np.array(df.loc[best_f1_score, 'ConfusionMatrix']).reshape(2, 2)
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm_2x2, annot=True, cmap='Blues', fmt='.2f',xticklabels=['Human', bot], yticklabels=['Human', bot])
     plt.xlabel('Predicted')
     plt.ylabel('Real')
-    plt.title(f'({silence}) Best Confusion Matrix: EllipticEnvelope with {best_components} PCA Components')
+    plt.title(f'({silence}) Best Confusion Matrix: IsolationForest with {best_components} PCA Components')
 
     if bot == 'Smart Bot':
-        namePlot = f"ResultadosPlotSmart/({silence})BestEEwith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSmart/({silence})BestIFwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     elif bot == 'Sequential Bot':
-        namePlot = f"ResultadosPlotSequential/({silence})BestEEwith{best_components}PCA Components.png"
+        namePlot = f"ResultadosPlotSequential/({silence})BestIFwith{best_components}PCA Components.png"
         os.makedirs(os.path.dirname(namePlot), exist_ok=True)
         plt.savefig(namePlot)
     return results, data2ensemble_pred
@@ -770,13 +801,13 @@ def ensemble(sil, all_data2ensemble_pred, o3test, bot):
                 results['TN']+=1
             # normal previsto e é normal
             if int(final_pred.count(1)) > maioria_pred and actual==0:
-                results['FN']+=1
+                results['FP']+=1
             # anomalia prevista e ataque
             if int(final_pred.count(1)) >= maioria_pred and actual==1:
                 results['TP']+=1
             # normal previsto e é ataque
             if int(final_pred.count(0)) > maioria_pred and actual==1:
-                results['FP']+=1
+                results['FN']+=1
     else:
         print("allData2Ensemble is empty or not formatted correctly.")
     tn=results['TN']

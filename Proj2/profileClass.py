@@ -23,8 +23,8 @@ warnings.filterwarnings('ignore')
 
 botFile = "Features_4seq1h30/4seq1h30"
 bot = 'Sequential Bot'
-# botFile = "Features_4smart1h30/4smart1h30"
-# bot = 'Smart Bot'
+botFile = "Features_4smart1h30/4smart1h30"
+bot = 'Smart Bot'
 humanFile = "Features_5brsg1h30/5brsg1h30"
 ######################################################################################
 #                                      PROFILE                                       #
@@ -54,6 +54,7 @@ def calling_algoritmos(sil, pcaComponents,
 
     data2ensemble_pred=[]
     # Processamento e armazenamento dos melhores scores para cada algoritmo
+
     # One Class SVM
     results_ocsvm, data2ensemble_pred = oc_svm(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3test, bot)
     print("\none class svm")
@@ -80,8 +81,6 @@ def calling_algoritmos(sil, pcaComponents,
     print("\nLOF pca")
     df_lof_pca = pd.DataFrame(results_lof_pca)
     store_best_scores('LOF pca', df_lof_pca)
-    # print("data2ensemble_pred:\n", data2ensemble_pred)
-    # print("data2ensemble_actual:\n", data2ensemble_actual)
     print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
     
     # GM
@@ -99,46 +98,46 @@ def calling_algoritmos(sil, pcaComponents,
     print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
     
     # # RC
-    # results_RC, data2ensemble_pred = robust_covariance(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
-    # print("\nrobust_covariance")
-    # df_RC = pd.DataFrame(results_RC)
-    # store_best_scores('robust_covariance', df_RC)
-    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+    results_RC, data2ensemble_pred = robust_covariance(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    print("\nrobust_covariance")
+    df_RC = pd.DataFrame(results_RC)
+    store_best_scores('robust_covariance', df_RC)
+    print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # # RC com PCA
-    # results_RC_pca, data2ensemble_pred = robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
-    # print("\nrobust_covariance pca")
-    # df_RC_pca = pd.DataFrame(results_RC_pca)
-    # store_best_scores('robust_covariance pca', df_RC_pca)
-    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+    # RC com PCA
+    results_RC_pca, data2ensemble_pred = robust_covariance_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\nrobust_covariance pca")
+    df_RC_pca = pd.DataFrame(results_RC_pca)
+    store_best_scores('robust_covariance pca', df_RC_pca)
+    print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # # EE
-    # results_ee, data2ensemble_pred = ee(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
-    # print("\nEllipticEnvelope")
-    # df_ee = pd.DataFrame(results_ee)
-    # store_best_scores('EllipticEnvelope', df_ee)
-    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+    # # # EE
+    # # results_ee, data2ensemble_pred = ee(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    # # print("\nEllipticEnvelope")
+    # # df_ee = pd.DataFrame(results_ee)
+    # # store_best_scores('EllipticEnvelope', df_ee)
+    # # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # # EE com PCA
-    # results_ee_pca, data2ensemble_pred = ee_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
-    # print("\nEllipticEnvelope pca")
-    # df_ee_pca = pd.DataFrame(results_ee_pca)
-    # store_best_scores('EllipticEnvelope pca', df_ee_pca)
-    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+    # # # EE com PCA
+    # # results_ee_pca, data2ensemble_pred = ee_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    # # print("\nEllipticEnvelope pca")
+    # # df_ee_pca = pd.DataFrame(results_ee_pca)
+    # # store_best_scores('EllipticEnvelope pca', df_ee_pca)
+    # # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # # IF
-    # results_if, data2ensemble_pred = iforest(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
-    # print("\nIsolationForest")
-    # df_if = pd.DataFrame(results_if)
-    # store_best_scores('IsolationForest', df_if)
-    # print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
+    # IF
+    results_if, data2ensemble_pred = iforest(data2ensemble_pred, sil, trainFeatures_browsing, testFeatures_browsing, testFeatures_atck, o3train, o3test, bot)
+    print("\nIsolationForest")
+    df_if = pd.DataFrame(results_if)
+    store_best_scores('IsolationForest', df_if)
+    print("3len(data2ensemble_pred): ", len(data2ensemble_pred))
 
-    # # IF com PCA
-    # results_if_pca, data2ensemble_pred = iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
-    # print("\nIsolationForest pca")
-    # df_if_pca = pd.DataFrame(results_if_pca)
-    # store_best_scores('IsolationForest pca', df_if_pca)
-    # print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
+    # IF com PCA
+    results_if_pca, data2ensemble_pred = iforest_pca(data2ensemble_pred, sil, pcaComponents, trainFeatures_browsing, testFeatures_browsing, trainFeatures_attack, testFeatures_atck, o3train, o3test, bot)
+    print("\nIsolationForest pca")
+    df_if_pca = pd.DataFrame(results_if_pca)
+    store_best_scores('IsolationForest pca', df_if_pca)
+    print("4len(data2ensemble_pred): ", len(data2ensemble_pred))
 
     # Ensemble
     # results_ensemble = ensemble(data2ensemble_pred, data2ensemble_actual)
